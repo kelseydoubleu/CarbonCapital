@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CARBON CAPITAL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --emitter: #ff4444;
+            --converter: #ffaa00;
+            --storage: #4488ff;
+            --neutral: #888888;
+            --abstract: #aa88ff;
+            --bg: #f5f5f0;
+            --text: #1a1a1a;
+            --border: #1a1a1a;
+            --grid: #d0d0c8;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
+
+        /* HEADER */
+        .header {
+            background: var(--text);
+            color: var(--bg);
+            padding: 20px 40px;
+            border-bottom: 4px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 40px;
+            font-size: 14px;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-label {
+            opacity: 0.7;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* MAIN LAYOUT */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 88px);
+        }
+
+        /* GRID BOARD */
+        .board-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            background: 
+                repeating-linear-gradient(0deg, transparent, transparent 49px, var(--grid) 49px, var(--grid) 50px),
+                repeating-linear-gradient(90deg, transparent, transparent 49px, var(--grid) 49px, var(--grid) 50px);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 16px;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        /* GRID CELL */
+        .grid-cell {
+            aspect-ratio: 1.2;
+            border: 4px solid var(--border);
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        .grid-cell:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .grid-cell.empty {
+            background: #1a1a1a;
+            border-style: dashed;
+        }
+
+        .grid-cell.baseline {
+            background: white;
+            filter: grayscale(1);
+        }
+
+        .grid-cell.transformed {
+            filter: grayscale(0);
+            border-width: 5px;
+        }
+
+        .grid-cell.transformed.role-emitter {
+            border-color: var(--emitter);
+        }
+
+        .grid-cell.transformed.role-converter {
+            border-color: var(--converter);
+        }
+
+        .grid-cell.transformed.role-storage {
+            border-color: var(--storage);
+        }
+
+        .grid-cell.transformed.role-neutral {
+            border-color: var(--neutral);
+        }
+
+        .grid-cell.transformed.role-abstract {
+            border-color: var(--abstract);
+        }
+
+        .cell-icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+            opacity: 0.3;
+        }
+
+        .grid-cell.transformed .cell-icon {
+            opacity: 1;
+        }
+
+        .cell-title {
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .cell-description {
+            font-size: 9px;
+            line-height: 1.3;
+            opacity: 0.6;
+            margin-bottom: 8px;
+            flex: 1;
+        }
+
+        .grid-cell.transformed .cell-description {
+            opacity: 0.8;
+        }
+
+        .cell-role {
+            display: inline-block;
+            font-size: 8px;
+            padding: 3px 6px;
+            border: 1px solid var(--border);
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            margin-top: auto;
+        }
+
+        .role-emitter { background: var(--emitter); color: white; border: none; }
+        .role-converter { background: var(--converter); color: white; border: none; }
+        .role-storage { background: var(--storage); color: white; border: none; }
+        .role-neutral { background: var(--neutral); color: white; border: none; }
+        .role-abstract { background: var(--abstract); color: white; border: none; }
+
+        .cell-emissions {
+            font-size: 10px;
+            margin-top: 8px;
+            font-weight: bold;
+            opacity: 0.7;
+        }
+
+        .grid-cell.transformed .cell-emissions {
+            opacity: 1;
+        }
+
+        .cell-status {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 10px;
+            padding: 4px 8px;
+            background: var(--text);
+            color: var(--bg);
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .grid-cell.baseline .cell-status {
+            background: #666;
+        }
+
+        .grid-cell.empty .cell-status {
+            background: var(--text);
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 400px;
+            background: white;
+            border-left: 4px solid var(--border);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            padding: 24px;
+            border-bottom: 2px solid var(--grid);
+        }
+
+        .sidebar-section h2 {
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .objective-box {
+            padding: 16px;
+            background: var(--text);
+            color: var(--bg);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .progress-bar {
+            margin: 16px 0;
+        }
+
+        .progress-label {
+            font-size: 11px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-track {
+            height: 20px;
+            background: var(--grid);
+            border: 2px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--storage);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+        }
+
+        .instruction-list {
+            list-style: none;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .instruction-list li {
+            padding-left: 20px;
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .instruction-list li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: var(--text);
+            color: var(--bg);
+            border: 2px solid var(--border);
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 16px;
+            transition: all 0.1s;
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg);
+            border: 6px solid var(--border);
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 12px 12px 0 rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            background: var(--text);
+            color: var(--bg);
+            padding: 24px;
+            border-bottom: 4px solid var(--border);
+            position: relative;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 13px;
+            font-style: italic;
+            opacity: 0.8;
+            margin-bottom: 16px;
+        }
+
+        .modal-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            font-size: 28px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--bg);
+            font-weight: bold;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-modal:hover {
+            opacity: 0.7;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-section {
+            margin-bottom: 24px;
+        }
+
+        .modal-section h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .action-card {
+            padding: 16px;
+            border: 3px solid var(--border);
+            margin-bottom: 12px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .action-card:hover {
+            background: var(--bg);
+            transform: translateX(4px);
+        }
+
+        .action-card.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .action-card.disabled:hover {
+            transform: none;
+            background: white;
+        }
+
+        .action-title {
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .action-cost {
+            font-size: 12px;
+            color: var(--emitter);
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .action-impact {
+            font-size: 11px;
+            color: #008800;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .action-description {
+            font-size: 11px;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 12px 0;
+        }
+
+        .data-box {
+            padding: 12px;
+            border: 2px solid var(--border);
+            background: white;
+        }
+
+        .data-box-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+            margin-bottom: 6px;
+        }
+
+        .data-box-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .data-box-unit {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .info-highlight {
+            background: rgba(68, 136, 255, 0.1);
+            border-left: 4px solid var(--storage);
+            padding: 12px;
+            margin: 12px 0;
+            font-size: 12px;
+        }
+
+        .transform-options {
+            display: grid;
+            gap: 12px;
+        }
+
+        @media (max-width: 1400px) {
+            .game-board {
+                gap: 12px;
+            }
+            
+            .grid-cell {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <h1>CARBON CAPITAL</h1>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-label">Carbon Capital</div>
+                <div class="stat-value"><span id="carbon-capital">3000</span> pts</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">City Transformation</div>
+                <div class="stat-value"><span id="transformation-percent">0</span>%</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Carbon Reduction</div>
+                <div class="stat-value">-<span id="reduction-percent">0</span>%</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Cells Transformed</div>
+                <div class="stat-value"><span id="cells-transformed">0</span>/15</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN LAYOUT -->
+    <div class="main-container">
+        <!-- GAME BOARD -->
+        <div class="board-container">
+            <div class="game-board" id="game-board">
+                <!-- Grid cells will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h2>Objective</h2>
+                <div class="objective-box">
+                    Transform the city from carbon-intensive baseline to a decarbonized future. Replace or retrofit buildings, develop empty land, and watch color return to the grid.
+                </div>
+                
+                <div class="progress-bar">
+                    <div class="progress-label">
+                        <span>Carbon Neutral Progress</span>
+                        <span id="progress-label">0%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2>How to Play</h2>
+                <ul class="instruction-list">
+                    <li>Click any grid cell to view its current state</li>
+                    <li>Choose to TRANSFORM, RETROFIT, or DEVELOP</li>
+                    <li>Each action costs Carbon Capital points</li>
+                    <li>Watch the city transform from B&W → COLOR</li>
+                    <li>Goal: Transform all 15 cells to win</li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h2>Carbon Roles</h2>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color role-emitter"></div>
+                        <span><strong>EMITTER:</strong> High carbon output</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color role-converter"></div>
+                        <span><strong>CONVERTER:</strong> Transforms energy/materials</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color role-storage"></div>
+                        <span><strong>STORAGE:</strong> Sequesters or stores carbon</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color role-neutral"></div>
+                        <span><strong>NEUTRAL:</strong> Minimal carbon impact</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color role-abstract"></div>
+                        <span><strong>ABSTRACT:</strong> Financial/symbolic storage</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2>Your Strategy</h2>
+                <div style="font-size: 12px; line-height: 1.6;">
+                    <strong>Current approach:</strong> Baseline assessment<br>
+                    <strong>Recommended:</strong> Start with high-emitters (AIRPORT, DATA CENTER) for maximum impact, or build up capital with smaller interventions first.
+                </div>
+                <button class="btn" onclick="resetGame()">RESET GAME</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal" id="cell-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close-modal" onclick="closeModal()">×</button>
+                <div class="modal-title" id="modal-title">EMPTY LAND</div>
+                <div class="modal-subtitle" id="modal-subtitle">Undeveloped parcel awaiting intervention</div>
+                <div class="modal-meta">
+                    <span>Status: <strong id="modal-status">BASELINE</strong></span>
+                    <span>Role: <strong id="modal-role">—</strong></span>
+                    <span>Emissions: <strong id="modal-emissions">—</strong></span>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <div id="modal-content-area">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            carbonCapital: 3000,
+            cellsTransformed: 0,
+            totalCells: 15,
+            grid: []
+        };
+
+        // Building typology definitions
+        const typologies = {
+            // Row 1
+            datacenter: {
+                id: 'datacenter',
+                name: 'DATA CENTER',
+                description: 'Invisible cathedral of computation; high energy, low visibility.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                icon: '🖥️',
+                baselineEmissions: 45200,
+                transformedEmissions: 12000,
+                transformCost: 850
+            },
+            airport: {
+                id: 'airport',
+                name: 'AIRPORT',
+                description: 'Global network of exchange; monument to speed and carbon cost.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                icon: '✈️',
+                baselineEmissions: 85000,
+                transformedEmissions: 28000,
+                transformCost: 1200
+            },
+            store: {
+                id: 'store',
+                name: 'STORE / MALL',
+                description: 'Spatialized desire; accelerates the flow of materials and images.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                icon: '🏬',
+                baselineEmissions: 42000,
+                transformedEmissions: 15000,
+                transformCost: 450
+            },
+            trainstation: {
+                id: 'trainstation',
+                name: 'TRAIN STATION',
+                description: 'Infrastructural temple; redistributes carbon and care through movement.',
+                role: 'STORAGE→DISTRIBUTION',
+                roleClass: 'role-storage',
+                icon: '🚂',
+                baselineEmissions: 32000,
+                transformedEmissions: 8000,
+                transformCost: 500
+            },
+            office: {
+                id: 'office',
+                name: 'OFFICE',
+                description: 'Contemporary workspace; converts human time, data, and energy into abstract value.',
+                role: 'EMITTER→CONVERTER',
+                roleClass: 'role-converter',
+                icon: '🏢',
+                baselineEmissions: 28000,
+                transformedEmissions: 9000,
+                transformCost: 420
+            },
+            // Row 2
+            apartment: {
+                id: 'apartment',
+                name: 'APARTMENT',
+                description: 'Stacked domesticity; shared systems hide energy cost.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                icon: '🏘️',
+                baselineEmissions: 28000,
+                transformedEmissions: 8500,
+                transformCost: 380
+            },
+            hotel: {
+                id: 'hotel',
+                name: 'HOTEL',
+                description: 'Temporary dwelling; condensed consumption and service labor.',
+                role: 'EMITTER→CONVERTER',
+                roleClass: 'role-converter',
+                icon: '🏨',
+                baselineEmissions: 35000,
+                transformedEmissions: 12000,
+                transformCost: 400
+            },
+            empty1: {
+                id: 'empty1',
+                name: 'EMPTY LAND',
+                description: 'Undeveloped parcel. Opportunity for carbon-friendly development.',
+                role: null,
+                roleClass: null,
+                icon: '⬛',
+                baselineEmissions: 0,
+                transformedEmissions: 0,
+                developCost: 300,
+                isEmpty: true
+            },
+            bank: {
+                id: 'bank',
+                name: 'BANK',
+                description: 'Traditional ledger of capital; contrasts with carbon as value.',
+                role: 'ABSTRACT STORAGE',
+                roleClass: 'role-abstract',
+                icon: '🏦',
+                baselineEmissions: 22000,
+                transformedEmissions: 7500,
+                transformCost: 380
+            },
+            school: {
+                id: 'school',
+                name: 'SCHOOL',
+                description: 'Educates new labor and knowledge systems of the carbon age.',
+                role: 'CONVERTER',
+                roleClass: 'role-converter',
+                icon: '🏫',
+                baselineEmissions: 25000,
+                transformedEmissions: 7000,
+                transformCost: 360
+            },
+            // Row 3
+            house: {
+                id: 'house',
+                name: 'HOUSE',
+                description: 'Private metabolism; site of daily carbon use and waste.',
+                role: 'EMITTER→CONVERTER',
+                roleClass: 'role-emitter',
+                icon: '🏠',
+                baselineEmissions: 12000,
+                transformedEmissions: 3000,
+                transformCost: 200
+            },
+            market: {
+                id: 'market',
+                name: 'MARKET',
+                description: 'Exchange hub; bridges production and consumption.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                icon: '🏪',
+                baselineEmissions: 15000,
+                transformedEmissions: 5000,
+                transformCost: 280
+            },
+            warehouse: {
+                id: 'warehouse',
+                name: 'WAREHOUSE',
+                description: 'Buffer between production and use; where logistics materialize.',
+                role: 'CONVERTER',
+                roleClass: 'role-converter',
+                icon: '🏭',
+                baselineEmissions: 19000,
+                transformedEmissions: 6000,
+                transformCost: 320
+            },
+            church: {
+                id: 'church',
+                name: 'CHURCH',
+                description: 'Temple of moral economy; sanctifies carbon kept, not spent.',
+                role: 'WORSHIP/STORAGE',
+                roleClass: 'role-storage',
+                icon: '⛪',
+                baselineEmissions: 6000,
+                transformedEmissions: 2000,
+                transformCost: 180
+            },
+            cafe: {
+                id: 'cafe',
+                name: 'CAFE',
+                description: 'Micro temple; transforms daily ritual into carbon storage.',
+                role: 'CONVERTER/STORAGE',
+                roleClass: 'role-storage',
+                icon: '☕',
+                baselineEmissions: 3500,
+                transformedEmissions: 1000,
+                transformCost: 150
+            }
+        };
+
+        // Initialize game
+        function initGame() {
+            gameState.grid = Object.keys(typologies).map(key => ({
+                ...typologies[key],
+                state: 'baseline', // baseline, transformed
+                position: gameState.grid.length
+            }));
+            
+            renderBoard();
+            updateStats();
+        }
+
+        // Render game board
+        function renderBoard() {
+            const board = document.getElementById('game-board');
+            board.innerHTML = '';
+            
+            gameState.grid.forEach((cell, index) => {
+                const cellDiv = document.createElement('div');
+                const roleClassForBorder = cell.state === 'transformed' && cell.roleClass ? cell.roleClass : '';
+                cellDiv.className = `grid-cell ${cell.isEmpty ? 'empty' : ''} ${cell.state} ${roleClassForBorder}`;
+                cellDiv.onclick = () => openCellModal(index);
+                
+                const statusText = cell.state === 'baseline' ? 'BASELINE' : 
+                                  cell.state === 'transformed' ? 'TRANSFORMED' : 'EMPTY';
+                
+                cellDiv.innerHTML = `
+                    <div class="cell-status">${statusText}</div>
+                    <div class="cell-icon">${cell.icon}</div>
+                    <div class="cell-title">${cell.name}</div>
+                    <div class="cell-description">${cell.description}</div>
+                    ${!cell.isEmpty ? `
+                        <div class="cell-emissions">
+                            ${cell.state === 'baseline' ? 
+                                (cell.baselineEmissions / 1000).toFixed(1) : 
+                                (cell.transformedEmissions / 1000).toFixed(1)
+                            }K tons CO2e/yr
+                        </div>
+                        ${cell.role ? `<div class="cell-role ${cell.roleClass}">${cell.role}</div>` : ''}
+                    ` : ''}
+                `;
+                
+                board.appendChild(cellDiv);
+            });
+        }
+
+        // Open cell modal
+        function openCellModal(index) {
+            const cell = gameState.grid[index];
+            const modal = document.getElementById('cell-modal');
+            
+            document.getElementById('modal-title').textContent = cell.name;
+            document.getElementById('modal-subtitle').textContent = cell.description;
+            document.getElementById('modal-status').textContent = cell.state.toUpperCase();
+            document.getElementById('modal-role').textContent = cell.role || '—';
+            
+            if (cell.isEmpty) {
+                document.getElementById('modal-emissions').textContent = '0 tons CO2e/yr';
+            } else {
+                const emissions = cell.state === 'baseline' ? cell.baselineEmissions : cell.transformedEmissions;
+                document.getElementById('modal-emissions').textContent = (emissions / 1000).toFixed(1) + 'K tons CO2e/yr';
+            }
+            
+            renderModalContent(cell, index);
+            modal.classList.add('active');
+        }
+
+        // Render modal content based on cell state
+        function renderModalContent(cell, index) {
+            const contentArea = document.getElementById('modal-content-area');
+            
+            if (cell.state === 'transformed') {
+                // Already transformed
+                contentArea.innerHTML = `
+                    <div class="info-highlight">
+                        ✓ This building has been successfully transformed!<br>
+                        <strong>Annual Emissions:</strong> ${(cell.transformedEmissions / 1000).toFixed(1)}K tons CO2e/yr<br>
+                        <strong>Reduction:</strong> ${((1 - cell.transformedEmissions / cell.baselineEmissions) * 100).toFixed(0)}% from baseline
+                    </div>
+                    
+                    <div class="modal-section">
+                        <h3>Transformation Details</h3>
+                        <p style="font-size: 12px; line-height: 1.6;">
+                            This building has undergone deep decarbonization through renewable energy procurement, 
+                            material substitution, and operational efficiency improvements. It now serves as a model 
+                            for the rest of the city.
+                        </p>
+                    </div>
+                `;
+            } else if (cell.isEmpty) {
+                // Empty land - develop options
+                contentArea.innerHTML = `
+                    <div class="modal-section">
+                        <h3>Development Options</h3>
+                        <p style="font-size: 12px; line-height: 1.6; margin-bottom: 16px;">
+                            This empty parcel offers a blank slate for carbon-friendly development. 
+                            Choose a typology to build from scratch with decarbonization built in.
+                        </p>
+                        
+                        <div class="transform-options">
+                            ${generateDevelopmentOptions(index)}
+                        </div>
+                    </div>
+                `;
+            } else {
+                // Baseline - transformation options
+                const reductionPercent = ((1 - cell.transformedEmissions / cell.baselineEmissions) * 100).toFixed(0);
+                const canAfford = gameState.carbonCapital >= cell.transformCost;
+                
+                contentArea.innerHTML = `
+                    <div class="modal-section">
+                        <h3>Current State (Baseline)</h3>
+                        <div class="data-grid">
+                            <div class="data-box">
+                                <div class="data-box-title">Current Emissions</div>
+                                <div class="data-box-value">${(cell.baselineEmissions / 1000).toFixed(1)}K <span class="data-box-unit">tons CO2e/yr</span></div>
+                            </div>
+                            <div class="data-box">
+                                <div class="data-box-title">Transformation Potential</div>
+                                <div class="data-box-value">${reductionPercent}% <span class="data-box-unit">reduction</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <h3>Transformation Options</h3>
+                        
+                        <div class="action-card ${!canAfford ? 'disabled' : ''}" 
+                             onclick="${canAfford ? `transformCell(${index})` : ''}">
+                            <div class="action-title">DEEP DECARBONIZATION</div>
+                            <div class="action-cost">Cost: ${cell.transformCost} Carbon Capital</div>
+                            <div class="action-impact">↓ -${reductionPercent}% emissions | -${((cell.baselineEmissions - cell.transformedEmissions) / 1000).toFixed(1)}K tons CO2e/yr</div>
+                            <div class="action-description">
+                                Complete transformation through renewable energy, material substitution, and operational efficiency. 
+                                The building becomes a model for carbon-friendly urban development.
+                            </div>
+                            ${!canAfford ? '<div style="margin-top: 8px; color: var(--emitter); font-size: 10px; font-weight: bold;">⚠ INSUFFICIENT CAPITAL</div>' : ''}
+                        </div>
+                        
+                        <div class="info-highlight">
+                            <strong>Pro tip:</strong> Transforming high-emitters like AIRPORT and DATA CENTER provides the biggest 
+                            absolute reductions, but costs more capital. Consider building up resources with smaller buildings first.
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Generate development options for empty land
+        function generateDevelopmentOptions(index) {
+            const options = [
+                { name: 'LIBRARY', role: 'NEUTRAL', cost: 250, emissions: 4000 },
+                { name: 'MUSEUM', role: 'CONVERTER/STORAGE', cost: 280, emissions: 8000 },
+                { name: 'DORMITORY', role: 'CONVERTER', cost: 220, emissions: 7000 }
+            ];
+            
+            return options.map(opt => {
+                const canAfford = gameState.carbonCapital >= opt.cost;
+                return `
+                    <div class="action-card ${!canAfford ? 'disabled' : ''}" 
+                         onclick="${canAfford ? `developLand(${index}, '${opt.name}')` : ''}">
+                        <div class="action-title">BUILD: ${opt.name}</div>
+                        <div class="action-cost">Cost: ${opt.cost} Carbon Capital</div>
+                        <div class="action-impact">New emissions: ${(opt.emissions / 1000).toFixed(1)}K tons CO2e/yr</div>
+                        <div class="action-description">
+                            Develop this parcel with a carbon-friendly ${opt.name.toLowerCase()}. 
+                            Role: <strong>${opt.role}</strong>
+                        </div>
+                        ${!canAfford ? '<div style="margin-top: 8px; color: var(--emitter); font-size: 10px; font-weight: bold;">⚠ INSUFFICIENT CAPITAL</div>' : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Transform a cell
+        function transformCell(index) {
+            const cell = gameState.grid[index];
+            
+            if (gameState.carbonCapital >= cell.transformCost) {
+                gameState.carbonCapital -= cell.transformCost;
+                cell.state = 'transformed';
+                gameState.cellsTransformed++;
+                
+                // Award bonus capital for successful transformation
+                const bonus = Math.floor(cell.transformCost * 0.3);
+                gameState.carbonCapital += bonus;
+                
+                closeModal();
+                renderBoard();
+                updateStats();
+                
+                // Check win condition
+                if (gameState.cellsTransformed === gameState.totalCells) {
+                    setTimeout(() => {
+                        alert('🎉 VICTORY! You have successfully decarbonized the entire city!\n\nAll 15 cells transformed from baseline to carbon-friendly typologies.');
+                    }, 500);
+                }
+            }
+        }
+
+        // Develop empty land
+        function developLand(index, buildingType) {
+            const developCost = 250; // Base development cost
+            
+            if (gameState.carbonCapital >= developCost) {
+                const cell = gameState.grid[index];
+                gameState.carbonCapital -= developCost;
+                cell.state = 'transformed';
+                cell.name = buildingType;
+                cell.isEmpty = false;
+                
+                // Assign role and roleClass based on building type
+                if (buildingType === 'LIBRARY') {
+                    cell.role = 'NEUTRAL';
+                    cell.roleClass = 'role-neutral';
+                    cell.transformedEmissions = 4000;
+                } else if (buildingType === 'MUSEUM') {
+                    cell.role = 'CONVERTER/STORAGE';
+                    cell.roleClass = 'role-storage';
+                    cell.transformedEmissions = 8000;
+                } else if (buildingType === 'DORMITORY') {
+                    cell.role = 'CONVERTER';
+                    cell.roleClass = 'role-converter';
+                    cell.transformedEmissions = 7000;
+                }
+                
+                gameState.cellsTransformed++;
+                
+                // Award bonus
+                const bonus = Math.floor(developCost * 0.2);
+                gameState.carbonCapital += bonus;
+                
+                closeModal();
+                renderBoard();
+                updateStats();
+                
+                if (gameState.cellsTransformed === gameState.totalCells) {
+                    setTimeout(() => {
+                        alert('🎉 VICTORY! You have successfully decarbonized the entire city!');
+                    }, 500);
+                }
+            }
+        }
+
+        // Update stats display
+        function updateStats() {
+            document.getElementById('carbon-capital').textContent = gameState.carbonCapital;
+            document.getElementById('cells-transformed').textContent = gameState.cellsTransformed;
+            
+            const transformPercent = Math.round((gameState.cellsTransformed / gameState.totalCells) * 100);
+            document.getElementById('transformation-percent').textContent = transformPercent;
+            
+            // Calculate total reduction
+            let totalBaseline = 0;
+            let totalCurrent = 0;
+            
+            gameState.grid.forEach(cell => {
+                if (!cell.isEmpty) {
+                    totalBaseline += cell.baselineEmissions;
+                    totalCurrent += cell.state === 'transformed' ? cell.transformedEmissions : cell.baselineEmissions;
+                }
+            });
+            
+            const reductionPercent = totalBaseline > 0 ? Math.round(((totalBaseline - totalCurrent) / totalBaseline) * 100) : 0;
+            document.getElementById('reduction-percent').textContent = reductionPercent;
+            
+            // Update progress bar - carbon neutral progress (goal is 100% reduction)
+            const carbonNeutralProgress = reductionPercent; // Same as reduction percent
+            document.getElementById('progress-label').textContent = carbonNeutralProgress + '%';
+            document.getElementById('progress-fill').style.width = carbonNeutralProgress + '%';
+            document.getElementById('progress-fill').textContent = carbonNeutralProgress + '%';
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('cell-modal').classList.remove('active');
+        }
+
+        // Reset game
+        function resetGame() {
+            if (confirm('Are you sure you want to reset the game? All progress will be lost.')) {
+                // Reset game state
+                gameState.carbonCapital = 3000;
+                gameState.cellsTransformed = 0;
+                gameState.totalCells = 15;
+                gameState.grid = [];
+                
+                // Reinitialize
+                initGame();
+            }
+        }
+
+        // Click outside modal to close
+        document.getElementById('cell-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'cell-modal') {
+                closeModal();
+            }
+        });
+
+        // Initialize game on load
+        initGame();
+    </script>
+</body>
+</html>
