@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CARBON CAPITAL: The Built Environment Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --emitter: #ff4444;
+            --converter: #ffaa00;
+            --storage: #4488ff;
+            --neutral: #888888;
+            --abstract: #aa88ff;
+            --bg: #f5f5f0;
+            --text: #1a1a1a;
+            --border: #1a1a1a;
+            --grid: #d0d0c8;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        /* HEADER */
+        .header {
+            background: var(--text);
+            color: var(--bg);
+            padding: 20px 30px;
+            border-bottom: 4px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 40px;
+            font-size: 14px;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-label {
+            opacity: 0.7;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* MAIN LAYOUT */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 88px);
+        }
+
+        /* NETWORK CANVAS */
+        .network-area {
+            flex: 1;
+            position: relative;
+            background: 
+                repeating-linear-gradient(0deg, transparent, transparent 49px, var(--grid) 49px, var(--grid) 50px),
+                repeating-linear-gradient(90deg, transparent, transparent 49px, var(--grid) 49px, var(--grid) 50px);
+            overflow: hidden;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* BUILDING NODES */
+        .building-node {
+            position: absolute;
+            background: var(--bg);
+            border: 3px solid var(--border);
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            min-width: 180px;
+            box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
+        }
+
+        .building-node:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        .building-node.owned {
+            border-width: 4px;
+            background: #fff;
+        }
+
+        .building-node.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .node-title {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .node-description {
+            font-size: 11px;
+            line-height: 1.3;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+
+        .node-role {
+            display: inline-block;
+            font-size: 9px;
+            padding: 3px 6px;
+            border: 1px solid var(--border);
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            margin-top: 4px;
+        }
+
+        .role-emitter { background: var(--emitter); color: white; }
+        .role-converter { background: var(--converter); color: white; }
+        .role-storage { background: var(--storage); color: white; }
+        .role-neutral { background: var(--neutral); color: white; }
+        .role-abstract { background: var(--abstract); color: white; }
+
+        .node-emissions {
+            font-size: 10px;
+            margin-top: 6px;
+            font-weight: bold;
+        }
+
+        /* CONNECTION LINES */
+        svg.connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .connection-line {
+            stroke: var(--border);
+            stroke-width: 2;
+            stroke-dasharray: 5, 5;
+            opacity: 0.3;
+        }
+
+        .connection-line.active {
+            stroke-dasharray: none;
+            opacity: 0.6;
+            stroke-width: 3;
+        }
+
+        /* CATEGORY LABELS */
+        .category-label {
+            position: absolute;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 380px;
+            background: white;
+            border-left: 4px solid var(--border);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            padding: 24px;
+            border-bottom: 2px solid var(--grid);
+        }
+
+        .sidebar-section h2 {
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .portfolio-item {
+            padding: 12px;
+            border: 2px solid var(--border);
+            margin-bottom: 8px;
+            background: var(--bg);
+        }
+
+        .portfolio-item-title {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .portfolio-item-stat {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+
+        .synergy-item {
+            padding: 10px;
+            border-left: 4px solid var(--storage);
+            background: rgba(68, 136, 255, 0.1);
+            margin-bottom: 8px;
+            font-size: 11px;
+        }
+
+        .advisor-text {
+            padding: 16px;
+            background: var(--text);
+            color: var(--bg);
+            font-size: 12px;
+            line-height: 1.5;
+            margin-top: 12px;
+            border: 2px solid var(--border);
+        }
+
+        .chance-card {
+            padding: 16px;
+            background: var(--emitter);
+            color: white;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 12px;
+            border: 3px solid var(--border);
+        }
+
+        .chance-card-title {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--text);
+            color: var(--bg);
+            border: 2px solid var(--border);
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: 8px;
+            margin-right: 8px;
+            transition: all 0.1s;
+        }
+
+        .btn:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg);
+            border: 6px solid var(--border);
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 8px 8px 0 rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            background: var(--text);
+            color: var(--bg);
+            padding: 24px;
+            border-bottom: 4px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 13px;
+            font-style: italic;
+            opacity: 0.8;
+            margin-bottom: 12px;
+        }
+
+        .modal-meta {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+        }
+
+        .modal-body {
+            padding: 0;
+        }
+
+        .modal-tabs {
+            display: flex;
+            border-bottom: 3px solid var(--border);
+            background: white;
+        }
+
+        .modal-tab {
+            flex: 1;
+            padding: 16px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            border-right: 2px solid var(--grid);
+            transition: all 0.1s;
+        }
+
+        .modal-tab:last-child {
+            border-right: none;
+        }
+
+        .modal-tab.active {
+            background: var(--text);
+            color: var(--bg);
+        }
+
+        .modal-tab:hover:not(.active) {
+            background: var(--grid);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 24px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .data-box {
+            padding: 16px;
+            border: 2px solid var(--border);
+            background: white;
+        }
+
+        .data-box-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.6;
+            margin-bottom: 8px;
+        }
+
+        .data-box-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .data-box-unit {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .intervention-card {
+            padding: 16px;
+            border: 3px solid var(--border);
+            margin-bottom: 16px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .intervention-card:hover {
+            background: var(--bg);
+            transform: translateX(4px);
+        }
+
+        .intervention-title {
+            font-size: 13px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .intervention-impact {
+            font-size: 12px;
+            margin-bottom: 8px;
+            color: #008800;
+            font-weight: bold;
+        }
+
+        .intervention-description {
+            font-size: 11px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .intervention-equity {
+            font-size: 10px;
+            margin-top: 8px;
+        }
+
+        .section-header {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 24px 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .material-list {
+            list-style: none;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .material-list li {
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .material-list li:before {
+            content: "■";
+            position: absolute;
+            left: 0;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: var(--bg);
+            font-weight: bold;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-modal:hover {
+            opacity: 0.7;
+        }
+
+        .synergy-unlock {
+            padding: 16px;
+            border: 3px solid var(--storage);
+            background: rgba(68, 136, 255, 0.05);
+            margin: 12px 0;
+        }
+
+        .synergy-unlock-title {
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            color: var(--storage);
+        }
+
+        .stat-bar {
+            margin: 8px 0;
+        }
+
+        .stat-bar-label {
+            font-size: 11px;
+            margin-bottom: 4px;
+        }
+
+        .stat-bar-track {
+            height: 8px;
+            background: var(--grid);
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: var(--text);
+            transition: width 0.3s;
+        }
+
+        .impact-highlight {
+            background: rgba(255, 68, 68, 0.1);
+            border-left: 4px solid var(--emitter);
+            padding: 12px;
+            margin: 12px 0;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            font-size: 10px;
+            padding: 12px 24px;
+            background: white;
+            border-bottom: 2px solid var(--grid);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <h1>CARBON CAPITAL: THE BUILT ENVIRONMENT GAME</h1>
+        <div class="header-stats">
+            <div class="stat">
+                <div class="stat-label">Carbon Budget</div>
+                <div class="stat-value"><span id="current-budget">12,450</span>/<span id="total-budget">15,000</span></div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Your Portfolio</div>
+                <div class="stat-value"><span id="buildings-owned">4</span>/20 Buildings</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Impact</div>
+                <div class="stat-value">-<span id="reduction-percent">18</span>%</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">Turn</div>
+                <div class="stat-value"><span id="current-turn">8</span>/50</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LEGEND -->
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color role-emitter"></div>
+            <span>EMITTER</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color role-converter"></div>
+            <span>CONVERTER</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color role-storage"></div>
+            <span>STORAGE</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color role-neutral"></div>
+            <span>NEUTRAL</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color role-abstract"></div>
+            <span>ABSTRACT</span>
+        </div>
+    </div>
+
+    <!-- MAIN LAYOUT -->
+    <div class="main-container">
+        <!-- NETWORK AREA -->
+        <div class="network-area">
+            <div class="canvas-wrapper" id="canvas">
+                <svg class="connections" id="connections"></svg>
+                
+                <!-- Category Labels -->
+                <div class="category-label" style="top: 40px; left: 60px;">DOMESTIC</div>
+                <div class="category-label" style="bottom: 40px; left: 60px;">COMMERCIAL</div>
+                <div class="category-label" style="top: 40px; right: 60px;">CIVIC</div>
+                <div class="category-label" style="top: 200px; right: 300px;">INFRASTRUCTURE</div>
+                
+                <!-- Building Nodes will be dynamically positioned -->
+                <div id="nodes-container"></div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h2>Your Portfolio</h2>
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 16px;">
+                    Carbon Capital: <span id="carbon-capital">1,240</span> pts
+                </div>
+                
+                <div id="portfolio-buildings">
+                    <div class="portfolio-item">
+                        <div class="portfolio-item-title">CAFE</div>
+                        <div class="portfolio-item-stat">Annual savings: 85 tons CO2e</div>
+                    </div>
+                    <div class="portfolio-item">
+                        <div class="portfolio-item-title">APARTMENT</div>
+                        <div class="portfolio-item-stat">Annual savings: 340 tons CO2e</div>
+                    </div>
+                    <div class="portfolio-item">
+                        <div class="portfolio-item-title">SCHOOL</div>
+                        <div class="portfolio-item-stat">Annual savings: 520 tons CO2e</div>
+                    </div>
+                    <div class="portfolio-item">
+                        <div class="portfolio-item-title">WAREHOUSE</div>
+                        <div class="portfolio-item-stat">Annual savings: 180 tons CO2e</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2>Active Sets</h2>
+                <div style="font-size: 11px; line-height: 1.6;">
+                    <div>⚬ DOMESTIC (1/4) - incomplete</div>
+                    <div>⚬ CIVIC (1/4) - incomplete</div>
+                    <div>⚬ INFRASTRUCTURE (1/5) - incomplete</div>
+                    <div>⚬ COMMERCIAL (1/4) - incomplete</div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2>Active Synergies</h2>
+                <div class="synergy-item">
+                    <strong>Small-Scale Retrofit Network</strong><br>
+                    +15% bonus across CAFE + APARTMENT
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2>Strategic Advisor</h2>
+                <div class="advisor-text">
+                    You're close to completing DOMESTIC set! Acquire HOTEL for a 25% bonus across all four buildings.
+                </div>
+                <div class="advisor-text" style="margin-top: 8px;">
+                    DATA CENTER is expensive but unlocks DISTRICT ENERGY synergy—huge multiplier effect.
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h2>Chance Card</h2>
+                <div class="chance-card">
+                    <div class="chance-card-title">🃏 THIS TURN</div>
+                    HEATWAVE: Cooling demand +40%<br>
+                    EMITTERS suffer -100 pts penalty
+                </div>
+                <button class="btn">Accept</button>
+                <button class="btn">Mitigate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal" id="building-modal">
+        <div class="modal-content">
+            <div class="modal-header" style="position: relative;">
+                <button class="close-modal" id="close-modal">×</button>
+                <div class="modal-title" id="modal-title">DATA CENTER</div>
+                <div class="modal-subtitle" id="modal-subtitle">
+                    "Invisible cathedral of computation; high energy, low visibility"
+                </div>
+                <div class="modal-meta">
+                    <span>Role: <strong id="modal-role">EMITTER</strong></span>
+                    <span>Status: <strong id="modal-status">Available</strong></span>
+                    <span>Cost: <strong id="modal-cost">850 pts</strong></span>
+                </div>
+            </div>
+
+            <div class="modal-tabs">
+                <div class="modal-tab active" data-tab="carbon">Carbon Profile</div>
+                <div class="modal-tab" data-tab="materials">Materials</div>
+                <div class="modal-tab" data-tab="lifecycle">Lifecycle</div>
+                <div class="modal-tab" data-tab="interventions">Interventions</div>
+                <div class="modal-tab" data-tab="equity">Equity</div>
+                <div class="modal-tab" data-tab="network">Network</div>
+            </div>
+
+            <div class="modal-body">
+                <!-- TAB 1: CARBON PROFILE -->
+                <div class="tab-content active" id="tab-carbon">
+                    <div class="impact-highlight">
+                        TOTAL ANNUAL IMPACT: 45,200 tons CO2e<br>
+                        Per SF: 28.5 kg CO2e/sf/yr (industry avg: 22-35)
+                    </div>
+
+                    <div class="data-grid">
+                        <div class="data-box">
+                            <div class="data-box-title">Embodied Carbon</div>
+                            <div class="data-box-value">8,900 <span class="data-box-unit">tons CO2e</span></div>
+                        </div>
+                        <div class="data-box">
+                            <div class="data-box-title">Operational Carbon</div>
+                            <div class="data-box-value">36,300 <span class="data-box-unit">tons CO2e/yr</span></div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">▸ Embodied Carbon Breakdown</div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-label">Foundation (35%): Massive concrete slab</div>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill" style="width: 35%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-label">Structure (40%): Steel frame, concrete cores</div>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill" style="width: 40%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-label">Envelope (15%): Minimal windows, high insulation</div>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill" style="width: 15%;"></div>
+                        </div>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-label">MEP Systems (10%): Redundant cooling, generators</div>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill" style="width: 10%;"></div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">▸ Operational Carbon Breakdown</div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-label">Cooling/HVAC (45%): 24/7 precision cooling</div>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill" style="width: 45%; background: var(--emitter);"></div>
+                        </div>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-label">IT Equipment (38%): Constant computation load</div>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill" style="width: 38%; background: var(--emitter);"></div>
+                        </div>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-label">Lighting (3%): Minimal human occupancy</div>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill" style="width: 3%; background: var(--emitter);"></div>
+                        </div>
+                    </div>
+                    <div class="stat-bar">
+                        <div class="stat-bar-label">Backup Generators (14%): Diesel, tested regularly</div>
+                        <div class="stat-bar-track">
+                            <div class="stat-bar-fill" style="width: 14%; background: var(--emitter);"></div>
+                        </div>
+                    </div>
+
+                    <div class="advisor-text" style="margin-top: 20px;">
+                        Grid Carbon Intensity Impact: ★★★★★ (CRITICAL)<br>
+                        "NYC grid = 0.29 kg CO2e/kWh. Moving to renewables = massive reduction potential"
+                    </div>
+                </div>
+
+                <!-- TAB 2: MATERIALS -->
+                <div class="tab-content" id="tab-materials">
+                    <div class="section-header">Construction Materials (Typical NYC)</div>
+                    <ul class="material-list">
+                        <li><strong>Foundation:</strong> Deep concrete piles, 3-4 ft thick slab for equipment load</li>
+                        <li><strong>Structure:</strong> Steel columns/beams, reinforced concrete shear walls</li>
+                        <li><strong>Envelope:</strong> Precast concrete panels, minimal glazing (<10%), spray foam insulation</li>
+                        <li><strong>Roof:</strong> TPO membrane, extensive cooling equipment mounting</li>
+                        <li><strong>Interior:</strong> Raised access flooring, cable trays, no finishes (industrial)</li>
+                        <li><strong>Specialty:</strong> Redundant mechanical systems, UPS battery banks</li>
+                    </ul>
+
+                    <div class="section-header">Material Embodied Carbon Hotspots</div>
+                    <div class="data-grid">
+                        <div class="data-box" style="border-left: 4px solid var(--emitter);">
+                            <div class="data-box-title">🔴 Concrete (Foundation)</div>
+                            <div class="data-box-value">4,200 <span class="data-box-unit">tons CO2e</span></div>
+                        </div>
+                        <div class="data-box" style="border-left: 4px solid var(--emitter);">
+                            <div class="data-box-title">🔴 Steel (Structure)</div>
+                            <div class="data-box-value">3,100 <span class="data-box-unit">tons CO2e</span></div>
+                        </div>
+                        <div class="data-box" style="border-left: 4px solid var(--converter);">
+                            <div class="data-box-title">🟡 Backup Generators</div>
+                            <div class="data-box-value">890 <span class="data-box-unit">tons CO2e</span></div>
+                        </div>
+                        <div class="data-box" style="border-left: 4px solid var(--converter);">
+                            <div class="data-box-title">🟡 MEP Systems</div>
+                            <div class="data-box-value">710 <span class="data-box-unit">tons CO2e</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: LIFECYCLE -->
+                <div class="tab-content" id="tab-lifecycle">
+                    <div class="data-grid">
+                        <div class="data-box">
+                            <div class="data-box-title">Typical Lifespan</div>
+                            <div class="data-box-value">15-20 <span class="data-box-unit">years</span></div>
+                            <div style="font-size: 10px; margin-top: 8px; opacity: 0.7;">Tech obsolescence</div>
+                        </div>
+                        <div class="data-box">
+                            <div class="data-box-title">Renovation Cycle</div>
+                            <div class="data-box-value">7-10 <span class="data-box-unit">years</span></div>
+                            <div style="font-size: 10px; margin-top: 8px; opacity: 0.7;">Equipment refresh</div>
+                        </div>
+                        <div class="data-box">
+                            <div class="data-box-title">Turnover Rate</div>
+                            <div class="data-box-value">HIGH</div>
+                        </div>
+                        <div class="data-box">
+                            <div class="data-box-title">Demolition Risk</div>
+                            <div class="data-box-value">MEDIUM</div>
+                            <div style="font-size: 10px; margin-top: 8px; opacity: 0.7;">Often repurposed</div>
+                        </div>
+                    </div>
+
+                    <div class="impact-highlight" style="margin-top: 20px;">
+                        ⚠ Short lifecycle = embodied carbon amortizes quickly<br>
+                        ⚠ Rapid tech change = stranded asset risk
+                    </div>
+
+                    <div class="section-header">Occupancy Profile</div>
+                    <div style="font-size: 13px; line-height: 1.8;">
+                        <strong>Staff:</strong> 5-15 people (minimal human presence)<br>
+                        <strong>Operating Hours:</strong> 24/7/365<br>
+                        <strong>Carbon per Occupant:</strong> 3,013 tons CO2e/person/yr<br>
+                        <div style="font-size: 11px; opacity: 0.7; margin-top: 8px;">
+                            (vs Office: 12 tons/person, Apartment: 8 tons/person)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: INTERVENTIONS -->
+                <div class="tab-content" id="tab-interventions">
+                    <div class="intervention-card">
+                        <div class="intervention-title">💰 RENEWABLE ENERGY PROCUREMENT (300 pts)</div>
+                        <div class="intervention-impact">↓ -55% operational | -19,965 tons CO2e/yr</div>
+                        <div class="intervention-description">
+                            "Sign PPA for wind/solar. No construction needed. Immediate impact on Scope 2 emissions."
+                        </div>
+                        <div class="intervention-equity">Social Equity: ★★★★★ (no displacement)</div>
+                        <button class="btn">Implement</button>
+                    </div>
+
+                    <div class="intervention-card">
+                        <div class="intervention-title">💰 FREE COOLING + WASTE HEAT CAPTURE (450 pts)</div>
+                        <div class="intervention-impact">↓ -25% operational | -9,075 tons CO2e/yr</div>
+                        <div class="intervention-description">
+                            "Use outdoor air when cool, pipe waste heat to adjacent buildings. Mechanical retrofit required."
+                        </div>
+                        <div class="synergy-unlock-title">🔓 UNLOCKS: DISTRICT HEATING NETWORK</div>
+                        <div class="intervention-equity">Social Equity: ★★★★☆ (benefits neighbors)</div>
+                        <button class="btn">Implement</button>
+                    </div>
+
+                    <div class="intervention-card">
+                        <div class="intervention-title">💰 ADAPTIVE REUSE → AFFORDABLE HOUSING (600 pts)</div>
+                        <div class="intervention-impact">↓ +100% operational reduction (remove use entirely)</div>
+                        <div class="intervention-description">
+                            "Cloud migration complete. Transform the cathedral. Extensive renovation to residential."
+                        </div>
+                        <div class="impact-highlight" style="font-size: 11px; margin-top: 8px;">
+                            ⚠ Requires: Completing DOMESTIC set first
+                        </div>
+                        <div class="intervention-equity">Social Equity: ★★★★★ (creates housing)</div>
+                        <button class="btn">Implement</button>
+                    </div>
+
+                    <div class="intervention-card">
+                        <div class="intervention-title">💰 EFFICIENCY OVERHAUL (200 pts)</div>
+                        <div class="intervention-impact">↓ -15% operational | -5,445 tons CO2e/yr</div>
+                        <div class="intervention-description">
+                            "LED lighting, airflow optimization, AI-driven load balancing. Low-risk, moderate reward."
+                        </div>
+                        <div class="intervention-equity">Social Equity: ★★★☆☆ (neutral)</div>
+                        <button class="btn">Implement</button>
+                    </div>
+                </div>
+
+                <!-- TAB 5: EQUITY -->
+                <div class="tab-content" id="tab-equity">
+                    <div class="section-header">Current State</div>
+                    <ul class="material-list">
+                        <li><strong>Location:</strong> Industrial waterfront (low residential impact)</li>
+                        <li><strong>Jobs:</strong> 12 permanent positions, high-tech, high-wage ($85k-150k/yr)</li>
+                        <li><strong>Community Benefit:</strong> Low (invisible infrastructure, no public access)</li>
+                        <li><strong>Energy Burden:</strong> None (commercial tenant, costs externalized)</li>
+                    </ul>
+
+                    <div class="section-header">Intervention Risks</div>
+                    <div class="advisor-text">
+                        ⚠ <strong>Adaptive Reuse:</strong> Could green-gentrify neighborhood if converted to luxury housing instead of affordable units
+                    </div>
+                    <div class="advisor-text" style="background: var(--storage); margin-top: 8px;">
+                        ✓ <strong>Renewable Energy:</strong> No displacement risk, pure carbon reduction
+                    </div>
+                    <div class="advisor-text" style="background: var(--storage); margin-top: 8px;">
+                        ✓ <strong>Waste Heat:</strong> Potential community benefit if district heating includes affordable housing and community facilities
+                    </div>
+
+                    <div class="data-grid" style="margin-top: 24px;">
+                        <div class="data-box">
+                            <div class="data-box-title">Green Gentrification Risk</div>
+                            <div class="data-box-value">★★★☆☆</div>
+                            <div style="font-size: 10px; margin-top: 8px; opacity: 0.7;">Location-dependent</div>
+                        </div>
+                        <div class="data-box">
+                            <div class="data-box-title">Community Benefit Potential</div>
+                            <div class="data-box-value">★★★★☆</div>
+                            <div style="font-size: 10px; margin-top: 8px; opacity: 0.7;">High if strategic</div>
+                        </div>
+                    </div>
+
+                    <div class="impact-highlight" style="margin-top: 20px;">
+                        <strong>Equity Strategy:</strong> Prioritize waste heat capture with community benefit agreements. Ensure any adaptive reuse includes minimum 50% affordable units at 60% AMI or below.
+                    </div>
+                </div>
+
+                <!-- TAB 6: NETWORK -->
+                <div class="tab-content" id="tab-network">
+                    <div class="section-header">⚡ Upstream Connections</div>
+                    <ul class="material-list">
+                        <li><strong>OFFICE →</strong> Data demand drives data center growth. Every knowledge worker = +2 kW constant load.</li>
+                        <li><strong>BANK →</strong> Financial computing, high-frequency trading, blockchain operations require 24/7 uptime.</li>
+                    </ul>
+
+                    <div class="section-header">⚡ Downstream Impacts</div>
+                    <ul class="material-list">
+                        <li><strong>Waste Heat →</strong> Could serve APARTMENT (500 units), SCHOOL (1,200 students), HOSPITAL (200 beds)</li>
+                        <li><strong>Backup Power →</strong> Could stabilize neighborhood microgrid during outages</li>
+                    </ul>
+
+                    <div class="section-header">🔓 Unlockable Synergies</div>
+                    
+                    <div class="synergy-unlock">
+                        <div class="synergy-unlock-title">DISTRICT ENERGY NETWORK</div>
+                        <div style="font-size: 11px; line-height: 1.6;">
+                            <strong>Requires:</strong> DATA CENTER + 3 DOMESTIC buildings<br>
+                            <strong>Bonus:</strong> Additional -30% operational carbon across all connected buildings<br>
+                            <em>"Waste heat warms homes—extraction becomes care"</em>
+                        </div>
+                        <button class="btn" style="margin-top: 12px;">View Requirements</button>
+                    </div>
+
+                    <div class="synergy-unlock">
+                        <div class="synergy-unlock-title">DIGITAL DECARBONIZATION COALITION</div>
+                        <div style="font-size: 11px; line-height: 1.6;">
+                            <strong>Requires:</strong> DATA CENTER + OFFICE + BANK<br>
+                            <strong>Bonus:</strong> -20% operational carbon across all three<br>
+                            <em>"Coordinated renewable procurement = economies of scale"</em>
+                        </div>
+                        <button class="btn" style="margin-top: 12px;">View Requirements</button>
+                    </div>
+
+                    <div class="section-header">📋 Policy Leverage</div>
+                    <ul class="material-list">
+                        <li>✓ Covered by NYC Local Law 97 (buildings >25,000 SF)</li>
+                        <li>✓ Eligible for Accelerated Depreciation (renewable energy investments)</li>
+                        <li>✓ Con Edison Commercial Demand Response incentives available</li>
+                        <li>✓ IRA 179D Deduction for energy-efficient commercial buildings</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Building data structure
+        const buildings = {
+            // DOMESTIC
+            house: {
+                id: 'house',
+                name: 'HOUSE',
+                description: 'Private metabolism; site of daily carbon use and waste.',
+                role: 'EMITTER→CONVERTER',
+                roleClass: 'role-emitter',
+                category: 'DOMESTIC',
+                emissions: 12000,
+                position: { x: 120, y: 120 },
+                owned: false,
+                cost: 200
+            },
+            apartment: {
+                id: 'apartment',
+                name: 'APARTMENT',
+                description: 'Stacked domesticity; shared systems hide energy cost.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                category: 'DOMESTIC',
+                emissions: 28000,
+                position: { x: 340, y: 100 },
+                owned: true,
+                cost: 0
+            },
+            hotel: {
+                id: 'hotel',
+                name: 'HOTEL',
+                description: 'Temporary dwelling; condensed consumption and service labor.',
+                role: 'EMITTER→CONVERTER',
+                roleClass: 'role-converter',
+                category: 'DOMESTIC',
+                emissions: 35000,
+                position: { x: 380, y: 280 },
+                owned: false,
+                cost: 400
+            },
+            dormitory: {
+                id: 'dormitory',
+                name: 'DORMITORY',
+                description: 'Collective domestic system; shared energy, shared care.',
+                role: 'CONVERTER',
+                roleClass: 'role-converter',
+                category: 'DOMESTIC',
+                emissions: 18000,
+                position: { x: 160, y: 300 },
+                owned: false,
+                cost: 250
+            },
+            // COMMERCIAL
+            market: {
+                id: 'market',
+                name: 'MARKET',
+                description: 'Exchange hub; bridges production and consumption.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                category: 'COMMERCIAL',
+                emissions: 15000,
+                position: { x: 160, y: 540 },
+                owned: false,
+                cost: 280
+            },
+            store: {
+                id: 'store',
+                name: 'STORE / MALL',
+                description: 'Spatialized desire; accelerates the flow of materials and images.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                category: 'COMMERCIAL',
+                emissions: 42000,
+                position: { x: 320, y: 440 },
+                owned: false,
+                cost: 450
+            },
+            bank: {
+                id: 'bank',
+                name: 'BANK',
+                description: 'Traditional ledger of capital; contrasts with carbon as value.',
+                role: 'ABSTRACT STORAGE',
+                roleClass: 'role-abstract',
+                category: 'COMMERCIAL',
+                emissions: 22000,
+                position: { x: 500, y: 520 },
+                owned: false,
+                cost: 380
+            },
+            cafe: {
+                id: 'cafe',
+                name: 'CAFE',
+                description: 'Micro temple; transforms daily ritual into carbon storage.',
+                role: 'CONVERTER/STORAGE',
+                roleClass: 'role-storage',
+                category: 'COMMERCIAL',
+                emissions: 3500,
+                position: { x: 380, y: 680 },
+                owned: true,
+                cost: 0
+            },
+            // CIVIC
+            school: {
+                id: 'school',
+                name: 'SCHOOL',
+                description: 'Educates new labor and knowledge systems of the carbon age.',
+                role: 'CONVERTER',
+                roleClass: 'role-converter',
+                category: 'CIVIC',
+                emissions: 25000,
+                position: { x: 960, y: 500 },
+                owned: true,
+                cost: 0
+            },
+            library: {
+                id: 'library',
+                name: 'LIBRARY',
+                description: 'Repository of memory; archive of ideas and techniques.',
+                role: 'NEUTRAL',
+                roleClass: 'role-neutral',
+                category: 'CIVIC',
+                emissions: 8000,
+                position: { x: 1060, y: 640 },
+                owned: false,
+                cost: 220
+            },
+            museum: {
+                id: 'museum',
+                name: 'MUSEUM',
+                description: 'Displays value and progress; transforms material into meaning.',
+                role: 'CONVERTER/STORAGE',
+                roleClass: 'role-storage',
+                category: 'CIVIC',
+                emissions: 18000,
+                position: { x: 1220, y: 380 },
+                owned: false,
+                cost: 320
+            },
+            church: {
+                id: 'church',
+                name: 'CHURCH',
+                description: 'Temple of moral economy; sanctifies carbon kept, not spent.',
+                role: 'WORSHIP/STORAGE',
+                roleClass: 'role-storage',
+                category: 'CIVIC',
+                emissions: 6000,
+                position: { x: 1280, y: 580 },
+                owned: false,
+                cost: 180
+            },
+            // INFRASTRUCTURE
+            trainstation: {
+                id: 'trainstation',
+                name: 'TRAIN STATION',
+                description: 'Infrastructural temple; redistributes carbon and care through movement.',
+                role: 'STORAGE→DISTRIBUTION',
+                roleClass: 'role-storage',
+                category: 'INFRASTRUCTURE',
+                emissions: 32000,
+                position: { x: 920, y: 280 },
+                owned: false,
+                cost: 500
+            },
+            datacenter: {
+                id: 'datacenter',
+                name: 'DATA CENTER',
+                description: 'Invisible cathedral of computation; high energy, low visibility.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                category: 'INFRASTRUCTURE',
+                emissions: 45200,
+                position: { x: 720, y: 460 },
+                owned: false,
+                cost: 850,
+                pulse: true
+            },
+            warehouse: {
+                id: 'warehouse',
+                name: 'WAREHOUSE',
+                description: 'Buffer between production and use; where logistics materialize.',
+                role: 'CONVERTER',
+                roleClass: 'role-converter',
+                category: 'INFRASTRUCTURE',
+                emissions: 19000,
+                position: { x: 680, y: 300 },
+                owned: true,
+                cost: 0
+            },
+            airport: {
+                id: 'airport',
+                name: 'AIRPORT',
+                description: 'Global network of exchange; monument to speed and carbon cost.',
+                role: 'EMITTER',
+                roleClass: 'role-emitter',
+                category: 'INFRASTRUCTURE',
+                emissions: 85000,
+                position: { x: 920, y: 380 },
+                owned: false,
+                cost: 1200,
+                pulse: true
+            },
+            office: {
+                id: 'office',
+                name: 'OFFICE',
+                description: 'The contemporary workspace; converts human time, data, and energy into abstract value.',
+                role: 'EMITTER→CONVERTER',
+                roleClass: 'role-converter',
+                category: 'INFRASTRUCTURE',
+                emissions: 28000,
+                position: { x: 760, y: 620 },
+                owned: false,
+                cost: 420
+            }
+        };
+
+        // Connection definitions (for synergies visualization)
+        const connections = [
+            // Domestic cluster
+            { from: 'house', to: 'apartment' },
+            { from: 'apartment', to: 'hotel' },
+            { from: 'hotel', to: 'dormitory' },
+            { from: 'dormitory', to: 'house' },
+            
+            // Commercial cluster
+            { from: 'market', to: 'store' },
+            { from: 'store', to: 'cafe' },
+            { from: 'cafe', to: 'bank' },
+            
+            // Civic cluster
+            { from: 'school', to: 'library' },
+            { from: 'library', to: 'church' },
+            { from: 'church', to: 'museum' },
+            { from: 'museum', to: 'school' },
+            
+            // Infrastructure cluster
+            { from: 'datacenter', to: 'warehouse' },
+            { from: 'warehouse', to: 'trainstation' },
+            { from: 'trainstation', to: 'airport' },
+            { from: 'airport', to: 'office' },
+            { from: 'office', to: 'datacenter' },
+            
+            // Cross-category synergies
+            { from: 'datacenter', to: 'apartment', active: true }, // District heating
+            { from: 'datacenter', to: 'office', active: true },
+            { from: 'datacenter', to: 'bank' },
+            { from: 'school', to: 'dormitory' },
+            { from: 'cafe', to: 'apartment', active: true }, // Small-scale retrofit
+            { from: 'warehouse', to: 'store' },
+            { from: 'trainstation', to: 'apartment' }
+        ];
+
+        // Render buildings
+        function renderBuildings() {
+            const container = document.getElementById('nodes-container');
+            container.innerHTML = '';
+            
+            Object.values(buildings).forEach(building => {
+                const node = document.createElement('div');
+                node.className = 'building-node' + (building.owned ? ' owned' : '') + (building.pulse ? ' pulse' : '');
+                node.id = 'node-' + building.id;
+                node.style.left = building.position.x + 'px';
+                node.style.top = building.position.y + 'px';
+                
+                node.innerHTML = `
+                    <div class="node-title">${building.name}</div>
+                    <div class="node-description">${building.description}</div>
+                    <div class="node-emissions">${(building.emissions / 1000).toFixed(1)}K tons CO2e/yr</div>
+                    <div class="node-role ${building.roleClass}">${building.role}</div>
+                `;
+                
+                node.addEventListener('click', () => openModal(building));
+                container.appendChild(node);
+            });
+        }
+
+        // Render connections
+        function renderConnections() {
+            const svg = document.getElementById('connections');
+            svg.innerHTML = '';
+            
+            connections.forEach(conn => {
+                const from = buildings[conn.from];
+                const to = buildings[conn.to];
+                
+                if (!from || !to) return;
+                
+                // Calculate center points of nodes
+                const fromX = from.position.x + 90; // approximate center
+                const fromY = from.position.y + 50;
+                const toX = to.position.x + 90;
+                const toY = to.position.y + 50;
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', fromX);
+                line.setAttribute('y1', fromY);
+                line.setAttribute('x2', toX);
+                line.setAttribute('y2', toY);
+                line.className = 'connection-line' + (conn.active ? ' active' : '');
+                
+                svg.appendChild(line);
+            });
+        }
+
+        // Modal functionality
+        function openModal(building) {
+            const modal = document.getElementById('building-modal');
+            document.getElementById('modal-title').textContent = building.name;
+            document.getElementById('modal-subtitle').textContent = building.description;
+            document.getElementById('modal-role').textContent = building.role;
+            document.getElementById('modal-status').textContent = building.owned ? 'Owned' : 'Available';
+            document.getElementById('modal-cost').textContent = building.cost + ' pts';
+            
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('building-modal').classList.remove('active');
+        }
+
+        // Tab functionality
+        document.querySelectorAll('.modal-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active class from all tabs and contents
+                document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding content
+                tab.classList.add('active');
+                const tabName = tab.getAttribute('data-tab');
+                document.getElementById('tab-' + tabName).classList.add('active');
+            });
+        });
+
+        // Close modal
+        document.getElementById('close-modal').addEventListener('click', closeModal);
+        document.getElementById('building-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'building-modal') {
+                closeModal();
+            }
+        });
+
+        // Initialize
+        renderBuildings();
+        renderConnections();
+    </script>
+</body>
+</html>
