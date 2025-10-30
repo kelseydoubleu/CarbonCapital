@@ -1,0 +1,2299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carbon Capital - Multi-Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            font-family: 'Futura', 'Century Gothic', 'Avenir', 'Arial', sans-serif;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            grid-template-rows: 280px 1fr 280px;
+            gap: 20px;
+            padding: 15px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        /* PLAYER SCOREBOARDS */
+        .scoreboard {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid;
+            padding: 12px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            max-height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .scoreboard::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .scoreboard::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .scoreboard::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .scoreboard.active {
+            box-shadow: 0 0 30px currentColor;
+            transform: scale(1.02);
+        }
+
+        .scoreboard-architect {
+            grid-column: 1;
+            grid-row: 1;
+            border-color: #4ade80;
+        }
+
+        .scoreboard-developer {
+            grid-column: 3;
+            grid-row: 1;
+            border-color: #f87171;
+        }
+
+        .scoreboard-citizen {
+            grid-column: 1;
+            grid-row: 3;
+            border-color: #60a5fa;
+        }
+
+        .scoreboard-policymaker {
+            grid-column: 3;
+            grid-row: 3;
+            border-color: #fbbf24;
+        }
+
+        .player-name {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .player-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 8px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-ally {
+            background: #4ade80;
+            color: #000;
+        }
+
+        .badge-enemy {
+            background: #f87171;
+            color: #000;
+        }
+
+        .badge-activist {
+            background: #60a5fa;
+            color: #000;
+        }
+
+        .badge-planner {
+            background: #fbbf24;
+            color: #000;
+        }
+
+        .stat {
+            margin: 6px 0;
+            font-size: 10px;
+        }
+
+        .stat-label {
+            opacity: 0.7;
+            font-size: 8px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .stat-value.positive {
+            color: #4ade80;
+        }
+
+        .stat-value.negative {
+            color: #f87171;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 3px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .parcels-owned {
+            display: flex;
+            gap: 3px;
+            margin-top: 4px;
+        }
+
+        .parcel-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1px solid currentColor;
+        }
+
+        .parcel-dot.filled {
+            background: currentColor;
+        }
+
+        /* GAME BOARD */
+        .game-board {
+            grid-column: 2;
+            grid-row: 1 / 4;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .round-info {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .total-carbon-meter {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: 1px solid;
+            backdrop-filter: blur(10px);
+            min-width: 280px;
+            text-align: center;
+        }
+
+        .carbon-meter-title {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            margin-bottom: 6px;
+        }
+
+        .carbon-meter-value {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .carbon-meter-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .carbon-meter-fill {
+            height: 100%;
+            transition: all 0.5s ease;
+            position: absolute;
+            left: 0;
+        }
+
+        .policy-card {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(251, 191, 36, 0.2);
+            border: 1px solid #fbbf24;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 10px;
+            backdrop-filter: blur(10px);
+            max-width: 250px;
+            text-align: center;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 8px;
+            max-width: 900px;
+            width: 100%;
+            aspect-ratio: 2 / 1;
+        }
+
+        .parcel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .parcel:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.05);
+        }
+
+        .parcel.claimed {
+            border-style: solid;
+            border-width: 2px;
+            position: relative;
+        }
+
+        .parcel.architect { 
+            border-color: #4ade80 !important; 
+            background: rgba(74, 222, 128, 0.15) !important; 
+        }
+
+        .parcel.developer { 
+            border-color: #f87171 !important; 
+            background: rgba(248, 113, 113, 0.15) !important; 
+        }
+
+        .parcel.citizen { 
+            border-color: #60a5fa !important; 
+            background: rgba(96, 165, 250, 0.15) !important; 
+        }
+
+        .parcel.policymaker { 
+            border-color: #fbbf24 !important; 
+            background: rgba(251, 191, 36, 0.15) !important; 
+        }
+
+        .player-stamp {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2px 6px;
+            border-radius: 4px;
+            z-index: 10;
+        }
+
+        .partnership-badge {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            font-size: 11px;
+            background: linear-gradient(135deg, rgba(74, 222, 128, 0.9), rgba(96, 165, 250, 0.9));
+            padding: 2px 6px;
+            border-radius: 3px;
+            z-index: 10;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .parcel.partnership {
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
+        }
+
+        .parcel.selected {
+            box-shadow: 0 0 20px currentColor;
+            transform: scale(1.1);
+        }
+
+        .building-icon {
+            font-size: 32px;
+        }
+
+        /* ACTION BUTTONS */
+        .action-buttons {
+            position: absolute;
+            bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid #fff;
+            color: #fff;
+            padding: 10px 20px;
+            font-family: 'Futura', 'Century Gothic', 'Avenir', 'Arial', sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #4ade80;
+            border-color: #4ade80;
+            color: #000;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #22c55e;
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-weight: normal;
+            letter-spacing: 2px;
+        }
+
+        .building-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .building-option {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .building-option:hover {
+            border-color: currentColor;
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        .building-option-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .building-option-name {
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .building-option-carbon {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+
+        .turn-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 1px solid;
+            padding: 30px 50px;
+            border-radius: 12px;
+            font-size: 28px;
+            font-weight: normal;
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            letter-spacing: 3px;
+        }
+
+        .turn-indicator.show {
+            opacity: 1;
+        }
+
+        /* EVENT NOTIFICATION */
+        .event-notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.98);
+            border: 2px solid;
+            padding: 35px 45px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .event-notification.show {
+            opacity: 1;
+        }
+
+        .event-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .event-title {
+            font-size: 22px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .event-description {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 15px;
+            font-weight: normal;
+        }
+
+        .event-effect {
+            font-size: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            margin-top: 15px;
+            font-weight: normal;
+        }
+
+        /* START SCREEN */
+        .start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.98);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            transition: opacity 0.5s ease;
+        }
+
+        .start-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .start-content {
+            max-width: 650px;
+            max-height: 85vh;
+            overflow-y: auto;
+            background: #1a1a1a;
+            border: 1px solid #fff;
+            padding: 35px 40px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .start-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .start-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .start-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .start-title {
+            font-size: 42px;
+            font-weight: normal;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #4ade80, #60a5fa, #fbbf24, #f87171);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .start-subtitle {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+            font-style: italic;
+        }
+
+        .instructions {
+            text-align: left;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .instructions h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #4ade80;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: normal;
+        }
+
+        .instruction-item {
+            margin: 10px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .instruction-number {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+
+        .instruction-text {
+            flex: 1;
+            line-height: 1.5;
+            font-size: 13px;
+        }
+
+        .players-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .player-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: left;
+        }
+
+        .player-card h4 {
+            font-size: 14px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: normal;
+        }
+
+        .player-card p {
+            font-size: 11px;
+            opacity: 0.7;
+            line-height: 1.4;
+        }
+
+        .btn-start {
+            background: linear-gradient(90deg, #4ade80, #22c55e);
+            border: none;
+            color: #000;
+            padding: 14px 40px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            font-family: 'Futura', 'Century Gothic', 'Avenir', 'Arial', sans-serif;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(74, 222, 128, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <!-- START SCREEN -->
+    <div class="start-screen" id="start-screen">
+        <div class="start-content">
+            <div class="start-title">CARBON CAPITAL</div>
+            <div class="start-subtitle">A Game of Urban Development & Climate Strategy</div>
+            
+            <div class="instructions">
+                <h3>How to Play</h3>
+                <div class="instruction-item">
+                    <div class="instruction-number">1</div>
+                    <div class="instruction-text">
+                        <strong>Claim & Build:</strong> Each player claims land and builds according to their objectives
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-number">2</div>
+                    <div class="instruction-text">
+                        <strong>Special Actions:</strong> Research, takeovers, protests, mandates - use strategic powers
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-number">3</div>
+                    <div class="instruction-text">
+                        <strong>Partnerships:</strong> Collaborate with other players for bonus points
+                    </div>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-number">4</div>
+                    <div class="instruction-text">
+                        <strong>Win Your Way:</strong> Each player has unique objectives - balance individual success with collective carbon impact
+                    </div>
+                </div>
+            </div>
+
+            <div class="players-grid">
+                <div class="player-card" style="border-color: #4ade80;">
+                    <h4 style="color: #4ade80;">🌲 ARCHITECT</h4>
+                    <p><strong>Goal:</strong> Gain recognition through innovative bio-buildings. Win by building the most award-worthy portfolio while reducing carbon.</p>
+                </div>
+                <div class="player-card" style="border-color: #f87171;">
+                    <h4 style="color: #f87171;">🏗️ DEVELOPER</h4>
+                    <p><strong>Goal:</strong> Maximize profit and ROI. Win by building the most valuable real estate portfolio, but watch out for carbon penalties.</p>
+                </div>
+                <div class="player-card" style="border-color: #60a5fa;">
+                    <h4 style="color: #60a5fa;">🌻 CITIZEN</h4>
+                    <p><strong>Goal:</strong> Create livable, affordable neighborhoods with green space. Win by maximizing community well-being and access.</p>
+                </div>
+                <div class="player-card" style="border-color: #fbbf24;">
+                    <h4 style="color: #fbbf24;">📜 POLICYMAKER</h4>
+                    <p><strong>Goal:</strong> Balance carbon reduction with economic growth. Win by maintaining public approval while meeting climate targets.</p>
+                </div>
+            </div>
+
+            <button class="btn-start" onclick="startGame()">LET'S PLAY!</button>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <!-- ARCHITECT SCOREBOARD (TOP LEFT) -->
+        <div class="scoreboard scoreboard-architect" id="architect-board">
+            <div class="player-name" style="color: #4ade80;">ARCHITECT</div>
+            <div class="player-badge badge-ally">CARBON ALLY</div>
+            
+            <div class="stat">
+                <div class="stat-label">RECOGNITION</div>
+                <div class="stat-value positive" id="architect-recognition">0 pts</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">CO₂ SAVED</div>
+                <div class="stat-value" id="architect-carbon">0 kg</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">BUDGET</div>
+                <div class="stat-value" id="architect-budget">$5.0M</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">RESEARCH LEVEL</div>
+                <div class="stat-value" id="architect-research">0 / 3</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">PARCELS OWNED</div>
+                <div class="parcels-owned" id="architect-parcels" style="color: #4ade80;">
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEVELOPER SCOREBOARD (TOP RIGHT) -->
+        <div class="scoreboard scoreboard-developer" id="developer-board">
+            <div class="player-name" style="color: #f87171;">DEVELOPER</div>
+            <div class="player-badge badge-enemy">CARBON ENEMY</div>
+            
+            <div class="stat">
+                <div class="stat-label">PROFIT</div>
+                <div class="stat-value positive" id="developer-profit">$0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">ROI</div>
+                <div class="stat-value" id="developer-roi">0%</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">CO₂ IMPACT</div>
+                <div class="stat-value negative" id="developer-carbon">0 kg</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">DEMOLITIONS</div>
+                <div class="stat-value" id="developer-demolitions">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">PARCELS OWNED</div>
+                <div class="parcels-owned" id="developer-parcels" style="color: #f87171;">
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CITIZEN SCOREBOARD (BOTTOM LEFT) -->
+        <div class="scoreboard scoreboard-citizen" id="citizen-board">
+            <div class="player-name" style="color: #60a5fa;">CITIZEN</div>
+            <div class="player-badge badge-activist">ACTIVIST</div>
+            
+            <div class="stat">
+                <div class="stat-label">COMMUNITY SCORE</div>
+                <div class="stat-value positive" id="citizen-score">0 pts</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">GREEN SPACE</div>
+                <div class="stat-value" id="citizen-green">0 sq ft</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">AFFORDABLE UNITS</div>
+                <div class="stat-value" id="citizen-affordable">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">PETITIONS ACTIVE</div>
+                <div class="stat-value" id="citizen-petitions">0</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">PARCELS PROTECTED</div>
+                <div class="parcels-owned" id="citizen-parcels" style="color: #60a5fa;">
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- POLICYMAKER SCOREBOARD (BOTTOM RIGHT) -->
+        <div class="scoreboard scoreboard-policymaker" id="policymaker-board">
+            <div class="player-name" style="color: #fbbf24;">POLICYMAKER</div>
+            <div class="player-badge badge-planner">CITY PLANNER</div>
+            
+            <div class="stat">
+                <div class="stat-label">PUBLIC APPROVAL</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="policymaker-approval" style="width: 70%; background: #fbbf24;"></div>
+                </div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">CARBON TARGET</div>
+                <div class="stat-value" id="policymaker-target">25%</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">POLICY BUDGET</div>
+                <div class="stat-value" id="policymaker-budget">$10M</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">ACTIVE POLICIES</div>
+                <div class="stat-value" id="policymaker-policies">1/5</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-label">PARCELS OWNED</div>
+                <div class="parcels-owned" id="policymaker-parcels" style="color: #fbbf24;">
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                    <div class="parcel-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GAME BOARD -->
+        <div class="game-board">
+            <div class="round-info">ROUND <span id="round-number">1</span> / 8</div>
+            
+            <div class="total-carbon-meter" id="total-carbon-meter">
+                <div class="carbon-meter-title">Total Embodied Carbon</div>
+                <div class="carbon-meter-value" id="total-carbon-value">0 kg CO₂</div>
+                <div class="carbon-meter-bar">
+                    <div class="carbon-meter-fill" id="carbon-meter-fill"></div>
+                </div>
+            </div>
+            
+            <div class="policy-card">
+                📜 <strong>ACTIVE POLICY:</strong><br>
+                <span id="active-policy">Carbon Tax: +$50/ton CO₂</span>
+            </div>
+
+            <div class="grid-container" id="game-grid">
+                <!-- Grid will be generated by JavaScript -->
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn" id="btn-claim" disabled>Claim Parcel</button>
+                <button class="btn btn-primary" id="btn-build" disabled>Build</button>
+                <button class="btn" id="btn-partner" disabled>🤝 Partner</button>
+                <button class="btn" id="btn-special">🧬 Research Bio-Materials</button>
+                <button class="btn" id="btn-end-turn">End Turn</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- BUILD MODAL -->
+    <div class="modal" id="build-modal">
+        <div class="modal-content" id="modal-content">
+            <div class="modal-title">CHOOSE BUILDING TYPE</div>
+            <div class="building-options" id="building-options">
+                <!-- Will be populated dynamically -->
+            </div>
+            <button class="btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- TURN INDICATOR -->
+    <div class="turn-indicator" id="turn-indicator"></div>
+
+    <!-- EVENT NOTIFICATION -->
+    <div class="event-notification" id="event-notification">
+        <div class="event-icon" id="event-icon"></div>
+        <div class="event-title" id="event-title"></div>
+        <div class="event-description" id="event-description"></div>
+        <div class="event-effect" id="event-effect"></div>
+    </div>
+
+    <script>
+        // Start Game
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+        }
+
+        // Game State
+        const gameState = {
+            currentPlayer: 0,
+            round: 1,
+            selectedParcel: null,
+            season: 'spring', // spring, summer, fall, winter
+            marketCycle: 'stable', // boom, stable, recession
+            publicSentiment: 'neutral', // supportive, neutral, concerned, angry
+            totalCarbonThreshold: 0, // Running total for disaster checks
+            players: [
+                { 
+                    name: 'Architect', 
+                    color: '#4ade80', 
+                    class: 'architect',
+                    icon: '🌲',
+                    carbon: 0, 
+                    budget: 5000000,
+                    parcels: 0,
+                    bio: 0,
+                    researchLevel: 0,
+                    unlockedMaterials: ['basic'],
+                    recognition: 0,
+                    portfolioDiversity: new Set(), // Track building types
+                    awards: 0,
+                    objective: 'Build innovative bio-buildings and gain recognition'
+                },
+                { 
+                    name: 'Developer', 
+                    color: '#f87171', 
+                    class: 'developer',
+                    icon: '🏗️',
+                    carbon: 0, 
+                    profit: 0,
+                    parcels: 0,
+                    speed: 80,
+                    demolitions: 0,
+                    roi: 0,
+                    marketSensitivity: 1.0, // Multiplier for market cycles
+                    objective: 'Maximize profit and build portfolio value'
+                },
+                { 
+                    name: 'Citizen', 
+                    color: '#60a5fa', 
+                    class: 'citizen',
+                    icon: '🌻',
+                    support: 60,
+                    petitions: 0,
+                    green: 0,
+                    parcels: 0,
+                    blockedParcels: [],
+                    affordability: 0,
+                    communityScore: 0,
+                    gentrificationPenalty: 0,
+                    objective: 'Create livable, affordable, green neighborhoods'
+                },
+                { 
+                    name: 'Policymaker', 
+                    color: '#fbbf24', 
+                    class: 'policymaker',
+                    icon: '📜',
+                    target: 25,
+                    budget: 10000000,
+                    policies: 1,
+                    compliance: 70,
+                    parcels: 0,
+                    activeMandates: [],
+                    publicApproval: 70,
+                    reelectionPressure: 0, // Increases over time
+                    objective: 'Balance carbon goals with economic growth'
+                }
+            ],
+            parcels: [],
+            policies: [
+                'Carbon Tax: +$50/ton CO₂',
+                'Green Building Incentive: -20% cost',
+                'Fast-Track Permits: Developer speed +25%',
+                'Historic Preservation: 3 parcels protected',
+                'Affordable Housing Mandate: 30% units'
+            ],
+            specialActionsUsed: {
+                architect: 0,
+                developer: 0,
+                citizen: 0,
+                policymaker: 0
+            },
+            partnerships: [],
+            events: [], // Track active events
+            disasters: [], // Track climate disasters
+            newsHeadlines: [] // Track narrative beats
+        };
+
+        const materials = {
+            basic: { name: 'Basic Bio-Materials', carbonBonus: 0, costMultiplier: 1 },
+            advanced: { name: 'Advanced Composites', carbonBonus: -30, costMultiplier: 1.2 },
+            experimental: { name: 'Experimental Mycelium', carbonBonus: -60, costMultiplier: 1.5 },
+            revolutionary: { name: 'Revolutionary Hemp-Steel', carbonBonus: -100, costMultiplier: 2 }
+        };
+
+        // Random Events Pool (David Benjamin-style: biomimetic, systems-thinking)
+        const eventPool = [
+            {
+                name: 'Climate March',
+                description: 'Thousands march for climate action',
+                effect: 'Citizen gets +30 community score, carbon penalties x2 this round',
+                trigger: () => {
+                    gameState.players[2].communityScore += 30;
+                    gameState.carbonPenaltyMultiplier = 2;
+                },
+                icon: '🌍'
+            },
+            {
+                name: 'Architecture Biennale',
+                description: 'City hosts international design showcase',
+                effect: 'Architect recognition +50, bio-buildings get bonus',
+                trigger: () => {
+                    gameState.players[0].recognition += 50;
+                    gameState.bioBonus = true;
+                },
+                icon: '🏛️'
+            },
+            {
+                name: 'Market Boom',
+                description: 'Real estate prices surge',
+                effect: 'Developer profits x1.5 this round',
+                trigger: () => {
+                    gameState.marketCycle = 'boom';
+                    gameState.players[1].marketSensitivity = 1.5;
+                },
+                icon: '📈'
+            },
+            {
+                name: 'Housing Crisis',
+                description: 'Rent prices skyrocket, protests erupt',
+                effect: 'Citizen affordability demands increase, luxury buildings face backlash',
+                trigger: () => {
+                    gameState.publicSentiment = 'concerned';
+                    gameState.affordabilityCrisis = true;
+                },
+                icon: '🏚️'
+            },
+            {
+                name: 'Tech Company Moves In',
+                description: 'Major tech firm opens headquarters',
+                effect: 'Developer +$3M, but gentrification pressure +40%',
+                trigger: () => {
+                    gameState.players[1].profit += 3000000;
+                    gameState.players[2].gentrificationPenalty += 40;
+                },
+                icon: '💻'
+            },
+            {
+                name: 'Heat Wave',
+                description: 'Record temperatures stress infrastructure',
+                effect: 'Bio-buildings resist heat better, conventional buildings lose value',
+                trigger: () => {
+                    gameState.heatWave = true;
+                    gameState.newsHeadlines.push('Green buildings prove resilient in heat emergency');
+                },
+                icon: '🌡️'
+            },
+            {
+                name: 'Green New Deal',
+                description: 'Major climate policy passes',
+                effect: 'Policymaker +20% approval, carbon tax doubles',
+                trigger: () => {
+                    gameState.players[3].publicApproval += 20;
+                    gameState.carbonTaxMultiplier = 2;
+                },
+                icon: '🌱'
+            },
+            {
+                name: 'Economic Downturn',
+                description: 'Recession hits construction sector',
+                effect: 'All budgets -20%, but bio-materials get cheaper',
+                trigger: () => {
+                    gameState.marketCycle = 'recession';
+                    gameState.players.forEach(p => {
+                        if (p.budget) p.budget *= 0.8;
+                    });
+                },
+                icon: '📉'
+            }
+        ];
+
+        const buildings = {
+            architect: [
+                { name: 'Mass Timber Tower', icon: '🌲', carbon: -150, cost: 2000000, material: 'basic' },
+                { name: 'Hempcrete House', icon: '🏠', carbon: -80, cost: 800000, material: 'basic' },
+                { name: 'Mycelium Pavilion', icon: '🍄', carbon: -50, cost: 500000, material: 'advanced' },
+                { name: 'Bio-Facade Office', icon: '🏢', carbon: -120, cost: 1500000, material: 'advanced' },
+                { name: 'Living Wall Tower', icon: '🌿', carbon: -200, cost: 3000000, material: 'experimental' },
+                { name: 'Algae BioDome', icon: '🫧', carbon: -180, cost: 2500000, material: 'revolutionary' }
+            ],
+            developer: [
+                { name: 'Concrete Tower', icon: '🏗️', carbon: 500, profit: 5000000 },
+                { name: 'Steel High-Rise', icon: '🏙️', carbon: 800, profit: 8000000 },
+                { name: 'Luxury Condos', icon: '🏛️', carbon: 600, profit: 6000000 },
+                { name: 'Shopping Mall', icon: '🏬', carbon: 1000, profit: 10000000 },
+                { name: 'Glass Skyscraper', icon: '🌆', carbon: 700, profit: 7000000 },
+                { name: 'Mega Complex', icon: '🏢', carbon: 1200, profit: 12000000 }
+            ],
+            citizen: [
+                { name: 'Community Garden', icon: '🌻', carbon: -30, green: 5000 },
+                { name: 'Co-op Housing', icon: '🏘️', carbon: -60, green: 2000 },
+                { name: 'Public Park', icon: '🌳', carbon: -40, green: 10000 },
+                { name: 'Bike Hub', icon: '🚲', carbon: -20, green: 1000 },
+                { name: 'Urban Farm', icon: '🚜', carbon: -50, green: 8000 },
+                { name: 'Pocket Park', icon: '🌺', carbon: -25, green: 3000 }
+            ],
+            policymaker: [
+                { name: 'Public Library', icon: '📚', carbon: -100, cost: 3000000 },
+                { name: 'Transit Station', icon: '🚉', carbon: -200, cost: 5000000 },
+                { name: 'Community Center', icon: '🏛️', carbon: -80, cost: 2000000 },
+                { name: 'Green Energy Hub', icon: '⚡', carbon: -150, cost: 4000000 },
+                { name: 'Public School', icon: '🏫', carbon: -90, cost: 2800000 },
+                { name: 'Health Clinic', icon: '🏥', carbon: -70, cost: 2200000 }
+            ]
+        };
+
+        // Initialize Grid
+        function initGrid() {
+            const grid = document.getElementById('game-grid');
+            for (let i = 0; i < 32; i++) {
+                const parcel = document.createElement('div');
+                parcel.className = 'parcel';
+                parcel.dataset.index = i;
+                parcel.innerHTML = '+';
+                parcel.addEventListener('click', () => selectParcel(i));
+                grid.appendChild(parcel);
+                gameState.parcels.push({ 
+                    owner: null, 
+                    building: null, 
+                    carbon: 0, 
+                    partnership: null,
+                    adjacencyBonus: 0,
+                    neighborhood: null
+                });
+            }
+        }
+
+        // Trigger Random Event
+        function triggerRandomEvent() {
+            // 50% chance of event each round after round 2
+            if (gameState.round < 2 || Math.random() > 0.5) return;
+            
+            const event = eventPool[Math.floor(Math.random() * eventPool.length)];
+            gameState.events.push(event);
+            
+            // Show event notification
+            const notification = document.getElementById('event-notification');
+            document.getElementById('event-icon').textContent = event.icon;
+            document.getElementById('event-title').textContent = event.name;
+            document.getElementById('event-description').textContent = event.description;
+            document.getElementById('event-effect').textContent = '⚡ ' + event.effect;
+            
+            notification.style.borderColor = '#fbbf24';
+            notification.classList.add('show');
+            
+            // Trigger event effect
+            event.trigger();
+            
+            // Hide after 4 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+            
+            // Add to news headlines
+            gameState.newsHeadlines.push(`${event.icon} ${event.name}`);
+        }
+
+        // Calculate Adjacency Effects (biomimetic neighborhood emergence)
+        function calculateAdjacencyEffects(parcelIndex) {
+            const parcel = gameState.parcels[parcelIndex];
+            if (!parcel.building) return 0;
+            
+            const owner = parcel.owner;
+            const player = gameState.players[owner];
+            let bonus = 0;
+            
+            // Get all adjacent parcels
+            const adjacentIndices = getAdjacentParcels(parcelIndex);
+            
+            // Count same-owner neighbors (district formation)
+            let sameOwnerCount = 0;
+            let differentOwnerCount = 0;
+            let greenSpaceCount = 0;
+            let carbonIntensiveCount = 0;
+            
+            adjacentIndices.forEach(idx => {
+                const adj = gameState.parcels[idx];
+                if (!adj.building) return;
+                
+                if (adj.owner === owner) {
+                    sameOwnerCount++;
+                } else {
+                    differentOwnerCount++;
+                }
+                
+                // Count environmental neighbors
+                if (adj.carbon < -50) greenSpaceCount++;
+                if (adj.carbon > 300) carbonIntensiveCount++;
+            });
+            
+            // ARCHITECT: Benefits from green district
+            if (player.class === 'architect') {
+                if (sameOwnerCount >= 2) {
+                    bonus += 20; // Bio-district bonus
+                    parcel.neighborhood = 'eco-district';
+                }
+                if (greenSpaceCount >= 2) {
+                    bonus += 15; // Green neighborhood synergy
+                }
+                if (carbonIntensiveCount >= 2) {
+                    bonus -= 10; // Polluted context penalty
+                }
+            }
+            
+            // DEVELOPER: Benefits from density
+            if (player.class === 'developer') {
+                if (sameOwnerCount >= 3) {
+                    player.profit += 500000; // Portfolio effect
+                    parcel.neighborhood = 'development-cluster';
+                }
+            }
+            
+            // CITIZEN: Hurt by gentrification
+            if (player.class === 'citizen') {
+                // Penalized if surrounded by luxury development
+                adjacentIndices.forEach(idx => {
+                    const adj = gameState.parcels[idx];
+                    if (adj.owner === 1 && adj.building) { // Developer
+                        if (adj.building.profit > 5000000) {
+                            player.gentrificationPenalty += 5;
+                            bonus -= 10;
+                        }
+                    }
+                });
+                
+                // Bonus for green corridors
+                if (greenSpaceCount >= 2) {
+                    bonus += 25;
+                    parcel.neighborhood = 'green-corridor';
+                }
+            }
+            
+            // POLICYMAKER: Benefits from mixed-use
+            if (player.class === 'policymaker') {
+                if (differentOwnerCount >= 2) {
+                    bonus += 15; // Balanced development
+                    player.publicApproval = Math.min(100, player.publicApproval + 2);
+                }
+            }
+            
+            return bonus;
+        }
+
+        // Get adjacent parcel indices
+        function getAdjacentParcels(index) {
+            const adjacent = [];
+            const row = Math.floor(index / 8);
+            const col = index % 8;
+            
+            // North
+            if (row > 0) adjacent.push(index - 8);
+            // South
+            if (row < 3) adjacent.push(index + 8);
+            // West
+            if (col > 0) adjacent.push(index - 1);
+            // East
+            if (col < 7) adjacent.push(index + 1);
+            
+            return adjacent;
+        }
+
+        // Partnership definitions
+        const partnerships = {
+            'architect-citizen': {
+                name: 'Eco-Affordable',
+                icon: '🌱🏘️',
+                bonus: 'Both players get +50 recognition/community points, -20% carbon',
+                requirements: 'Adjacent parcels, both must have buildings',
+                architectBonus: 50,
+                citizenBonus: 50,
+                carbonBonus: -100
+            },
+            'architect-policymaker': {
+                name: 'Green Initiative',
+                icon: '🌲📜',
+                bonus: 'Architect +40 recognition, Policymaker +15% approval',
+                requirements: 'Adjacent parcels, both must have buildings',
+                architectBonus: 40,
+                policymakerApproval: 15
+            },
+            'developer-policymaker': {
+                name: 'Tax Break Deal',
+                icon: '🏗️💰',
+                bonus: 'Developer +$2M profit, Policymaker +10% approval',
+                requirements: 'Adjacent parcels, both must have buildings',
+                developerProfit: 2000000,
+                policymakerApproval: 10
+            },
+            'developer-architect': {
+                name: 'Luxury Green',
+                icon: '💎🌿',
+                bonus: 'Developer +$1.5M, Architect +30 recognition',
+                requirements: 'Adjacent parcels, both must have buildings',
+                developerProfit: 1500000,
+                architectBonus: 30
+            },
+            'citizen-policymaker': {
+                name: 'Public Works',
+                icon: '🌻🏛️',
+                bonus: 'Citizen +40 community, Policymaker +12% approval',
+                requirements: 'Adjacent parcels, both must have buildings',
+                citizenBonus: 40,
+                policymakerApproval: 12
+            },
+            'developer-citizen': {
+                name: 'Mixed-Use',
+                icon: '🏢🏘️',
+                bonus: 'Developer +$1M, Citizen +30 affordable units',
+                requirements: 'Adjacent parcels, both must have buildings',
+                developerProfit: 1000000,
+                citizenAffordable: 30
+            }
+        };
+
+        // Check if two parcels are adjacent
+        function areAdjacent(index1, index2) {
+            const row1 = Math.floor(index1 / 8);
+            const col1 = index1 % 8;
+            const row2 = Math.floor(index2 / 8);
+            const col2 = index2 % 8;
+            
+            // Check if adjacent horizontally or vertically
+            return (Math.abs(row1 - row2) === 1 && col1 === col2) || 
+                   (Math.abs(col1 - col2) === 1 && row1 === row2);
+        }
+
+        // Find possible partnerships for current player
+        function findPossiblePartnerships(currentIndex) {
+            const currentPlayer = gameState.players[gameState.currentPlayer];
+            const currentParcel = gameState.parcels[currentIndex];
+            
+            if (!currentParcel.building) return [];
+            
+            const possiblePartners = [];
+            
+            // Check all parcels
+            gameState.parcels.forEach((parcel, idx) => {
+                if (idx === currentIndex) return;
+                if (!parcel.building) return;
+                if (!parcel.owner && parcel.owner !== 0) return;
+                if (parcel.owner === gameState.currentPlayer) return;
+                if (!areAdjacent(currentIndex, idx)) return;
+                
+                const partnerPlayer = gameState.players[parcel.owner];
+                const partnershipKey = [currentPlayer.class, partnerPlayer.class].sort().join('-');
+                
+                if (partnerships[partnershipKey]) {
+                    possiblePartners.push({
+                        parcelIndex: idx,
+                        partner: partnerPlayer,
+                        partnershipKey: partnershipKey
+                    });
+                }
+            });
+            
+            return possiblePartners;
+        }
+
+        // Select Parcel
+        function selectParcel(index) {
+            // Clear previous selection
+            document.querySelectorAll('.parcel').forEach(p => p.classList.remove('selected'));
+            
+            const parcel = document.querySelectorAll('.parcel')[index];
+            parcel.classList.add('selected');
+            gameState.selectedParcel = index;
+            
+            // Enable claim/build buttons
+            if (gameState.parcels[index].owner === null) {
+                document.getElementById('btn-claim').disabled = false;
+                document.getElementById('btn-build').disabled = true;
+                document.getElementById('btn-partner').disabled = true;
+            } else if (gameState.parcels[index].owner === gameState.currentPlayer) {
+                document.getElementById('btn-claim').disabled = true;
+                document.getElementById('btn-build').disabled = false;
+                
+                // Check if partnerships available
+                const possiblePartnerships = findPossiblePartnerships(index);
+                document.getElementById('btn-partner').disabled = possiblePartnerships.length === 0;
+            } else {
+                document.getElementById('btn-claim').disabled = true;
+                document.getElementById('btn-build').disabled = true;
+                document.getElementById('btn-partner').disabled = true;
+            }
+        }
+
+        // Claim Parcel
+        document.getElementById('btn-claim').addEventListener('click', () => {
+            if (gameState.selectedParcel !== null) {
+                const index = gameState.selectedParcel;
+                const player = gameState.players[gameState.currentPlayer];
+                
+                gameState.parcels[index].owner = gameState.currentPlayer;
+                const parcel = document.querySelectorAll('.parcel')[index];
+                parcel.classList.add('claimed', player.class);
+                
+                player.parcels++;
+                updateScoreboard(gameState.currentPlayer);
+                
+                document.getElementById('btn-claim').disabled = true;
+                document.getElementById('btn-build').disabled = false;
+            }
+        });
+
+        // Build
+        document.getElementById('btn-build').addEventListener('click', () => {
+            if (gameState.selectedParcel !== null) {
+                openBuildModal();
+            }
+        });
+
+        // Partner
+        document.getElementById('btn-partner').addEventListener('click', () => {
+            if (gameState.selectedParcel !== null) {
+                openPartnerModal();
+            }
+        });
+
+        // Open Partner Modal
+        function openPartnerModal() {
+            const possiblePartnerships = findPossiblePartnerships(gameState.selectedParcel);
+            
+            if (possiblePartnerships.length === 0) {
+                alert('No partnerships available for this parcel!');
+                return;
+            }
+            
+            const player = gameState.players[gameState.currentPlayer];
+            const modal = document.getElementById('build-modal');
+            const content = document.getElementById('modal-content');
+            const options = document.getElementById('building-options');
+            
+            content.style.borderColor = player.color;
+            
+            // Clear and setup modal
+            document.getElementById('modal-content').innerHTML = `
+                <div class="modal-title">🤝 Choose Partnership</div>
+                <div style="margin: 20px 0; font-size: 12px; opacity: 0.8;">
+                    Select an adjacent partner to collaborate with:
+                </div>
+                <div class="building-options" id="partnership-options"></div>
+                <button class="btn" onclick="closeModal()">Cancel</button>
+            `;
+            
+            const partnerOptions = document.getElementById('partnership-options');
+            
+            possiblePartnerships.forEach((pp, idx) => {
+                const partnership = partnerships[pp.partnershipKey];
+                const option = document.createElement('div');
+                option.className = 'building-option';
+                option.style.color = pp.partner.color;
+                option.innerHTML = `
+                    <div class="building-option-icon">${partnership.icon}</div>
+                    <div class="building-option-name">${partnership.name}</div>
+                    <div class="building-option-carbon" style="font-size: 9px; line-height: 1.3;">
+                        ${partnership.bonus}
+                    </div>
+                `;
+                option.addEventListener('click', () => createPartnership(pp.parcelIndex, pp.partnershipKey));
+                partnerOptions.appendChild(option);
+            });
+            
+            modal.classList.add('active');
+        }
+
+        // Create Partnership (now properly scoped)
+        function createPartnership(partnerParcelIndex, partnershipKey) {
+            const currentIndex = gameState.selectedParcel;
+            const currentPlayer = gameState.players[gameState.currentPlayer];
+            const partnerPlayer = gameState.players[gameState.parcels[partnerParcelIndex].owner];
+            const partnership = partnerships[partnershipKey];
+            
+            // Mark both parcels as partnered
+            gameState.parcels[currentIndex].partnership = partnershipKey;
+            gameState.parcels[partnerParcelIndex].partnership = partnershipKey;
+            
+            // Add visual indicators
+            const currentParcel = document.querySelectorAll('.parcel')[currentIndex];
+            const partnerParcel = document.querySelectorAll('.parcel')[partnerParcelIndex];
+            
+            currentParcel.classList.add('partnership');
+            partnerParcel.classList.add('partnership');
+            
+            // Add partnership badges
+            const badge1 = document.createElement('div');
+            badge1.className = 'partnership-badge';
+            badge1.textContent = '🤝';
+            currentParcel.appendChild(badge1);
+            
+            const badge2 = document.createElement('div');
+            badge2.className = 'partnership-badge';
+            badge2.textContent = '🤝';
+            partnerParcel.appendChild(badge2);
+            
+            // Apply bonuses
+            if (partnership.architectBonus && currentPlayer.class === 'architect') {
+                currentPlayer.recognition += partnership.architectBonus;
+            } else if (partnership.architectBonus && partnerPlayer.class === 'architect') {
+                partnerPlayer.recognition += partnership.architectBonus;
+            }
+            
+            if (partnership.developerProfit && currentPlayer.class === 'developer') {
+                currentPlayer.profit += partnership.developerProfit;
+            } else if (partnership.developerProfit && partnerPlayer.class === 'developer') {
+                partnerPlayer.profit += partnership.developerProfit;
+            }
+            
+            if (partnership.citizenBonus && currentPlayer.class === 'citizen') {
+                currentPlayer.communityScore = (currentPlayer.communityScore || 0) + partnership.citizenBonus;
+            } else if (partnership.citizenBonus && partnerPlayer.class === 'citizen') {
+                partnerPlayer.communityScore = (partnerPlayer.communityScore || 0) + partnership.citizenBonus;
+            }
+            
+            if (partnership.citizenAffordable && currentPlayer.class === 'citizen') {
+                currentPlayer.affordability += partnership.citizenAffordable;
+            } else if (partnership.citizenAffordable && partnerPlayer.class === 'citizen') {
+                partnerPlayer.affordability += partnership.citizenAffordable;
+            }
+            
+            if (partnership.policymakerApproval && currentPlayer.class === 'policymaker') {
+                currentPlayer.publicApproval = Math.min(100, currentPlayer.publicApproval + partnership.policymakerApproval);
+            } else if (partnership.policymakerApproval && partnerPlayer.class === 'policymaker') {
+                partnerPlayer.publicApproval = Math.min(100, partnerPlayer.publicApproval + partnership.policymakerApproval);
+            }
+            
+            if (partnership.carbonBonus) {
+                gameState.parcels[currentIndex].carbon += partnership.carbonBonus / 2;
+                gameState.parcels[partnerParcelIndex].carbon += partnership.carbonBonus / 2;
+            }
+            
+            // Track partnership
+            gameState.partnerships.push({
+                players: [currentPlayer.class, partnerPlayer.class],
+                type: partnershipKey,
+                parcels: [currentIndex, partnerParcelIndex]
+            });
+            
+            alert(`🤝 Partnership Created!\n${partnership.name}\n\n${partnership.bonus}`);
+            
+            updateScoreboard(gameState.currentPlayer);
+            updateScoreboard(gameState.parcels[partnerParcelIndex].owner);
+            updateTotalCarbonMeter();
+            closeModal();
+        }
+
+        // Special Action
+        document.getElementById('btn-special').addEventListener('click', () => {
+            const player = gameState.players[gameState.currentPlayer];
+            
+            if (player.class === 'architect') {
+                // Research Bio-Materials
+                if (player.researchLevel < 3 && player.budget >= 1000000) {
+                    player.researchLevel++;
+                    player.budget -= 1000000;
+                    
+                    const materialNames = ['Basic', 'Advanced', 'Experimental', 'Revolutionary'];
+                    alert(`🧬 Research Complete!\nUnlocked: ${materialNames[player.researchLevel]} Bio-Materials\n\nNew buildings available! Cost: $1M`);
+                    
+                    updateScoreboard(gameState.currentPlayer);
+                    gameState.specialActionsUsed.architect++;
+                } else if (player.researchLevel >= 3) {
+                    alert('🧬 Maximum research level reached!');
+                } else {
+                    alert('🧬 Not enough budget! Need $1M to research.');
+                }
+            } else if (player.class === 'developer') {
+                // Hostile Takeover - requires selected parcel owned by another player
+                if (gameState.selectedParcel !== null) {
+                    const index = gameState.selectedParcel;
+                    const parcelData = gameState.parcels[index];
+                    
+                    if (parcelData.owner !== null && parcelData.owner !== gameState.currentPlayer && parcelData.building) {
+                        const oldOwner = gameState.players[parcelData.owner];
+                        
+                        // Demolish existing building
+                        parcelData.owner = gameState.currentPlayer;
+                        parcelData.building = null;
+                        parcelData.carbon = 0;
+                        
+                        const parcel = document.querySelectorAll('.parcel')[index];
+                        parcel.className = 'parcel claimed developer';
+                        parcel.innerHTML = '+';
+                        
+                        player.demolitions++;
+                        player.parcels++;
+                        oldOwner.parcels--;
+                        
+                        alert(`🏗️ Hostile Takeover!\nDemolished ${oldOwner.name}'s building!\n+500kg CO₂ from demolition`);
+                        
+                        player.carbon += 500;
+                        gameState.specialActionsUsed.developer++;
+                        
+                        updateScoreboard(gameState.currentPlayer);
+                        updateScoreboard(parcelData.owner);
+                        updateTotalCarbonMeter();
+                    } else {
+                        alert('💰 Select a parcel with a building owned by another player!');
+                    }
+                } else {
+                    alert('💰 Select a parcel first!');
+                }
+            } else if (player.class === 'citizen') {
+                // Block Development - requires selected parcel
+                if (gameState.selectedParcel !== null) {
+                    const index = gameState.selectedParcel;
+                    
+                    if (!player.blockedParcels.includes(index)) {
+                        player.blockedParcels.push(index);
+                        player.petitions++;
+                        
+                        const parcel = document.querySelectorAll('.parcel')[index];
+                        parcel.style.boxShadow = '0 0 20px #60a5fa';
+                        
+                        alert('📢 Development Blocked!\nThis parcel is protected for 2 rounds!');
+                        
+                        gameState.specialActionsUsed.citizen++;
+                        updateScoreboard(gameState.currentPlayer);
+                    } else {
+                        alert('📢 This parcel is already protected!');
+                    }
+                } else {
+                    alert('📢 Select a parcel first!');
+                }
+            } else if (player.class === 'policymaker') {
+                // Issue Mandate
+                const mandates = [
+                    { name: 'Carbon Cap', effect: 'All buildings -50kg CO₂' },
+                    { name: 'Green Subsidy', effect: 'Bio-materials cost -30%' },
+                    { name: 'Demo Tax', effect: 'Demolitions +$2M cost' },
+                    { name: 'Public Transit', effect: 'All parcels -20kg CO₂' }
+                ];
+                
+                if (player.activeMandates.length < 3 && player.budget >= 2000000) {
+                    const mandate = mandates[player.activeMandates.length];
+                    player.activeMandates.push(mandate);
+                    player.policies++;
+                    player.budget -= 2000000;
+                    
+                    alert(`📜 Mandate Issued!\n${mandate.name}\n${mandate.effect}\n\nCost: $2M`);
+                    
+                    updateScoreboard(gameState.currentPlayer);
+                    gameState.specialActionsUsed.policymaker++;
+                } else if (player.activeMandates.length >= 3) {
+                    alert('📜 Maximum mandates reached!');
+                } else {
+                    alert('📜 Not enough budget! Need $2M to issue mandate.');
+                }
+            }
+        });
+
+        // Open Build Modal
+        function openBuildModal() {
+            const player = gameState.players[gameState.currentPlayer];
+            const modal = document.getElementById('build-modal');
+            const content = document.getElementById('modal-content');
+            const options = document.getElementById('building-options');
+            
+            content.style.borderColor = player.color;
+            options.innerHTML = '';
+            
+            let playerBuildings = buildings[player.class];
+            
+            // Filter architect buildings by unlocked materials
+            if (player.class === 'architect') {
+                const materialKeys = ['basic', 'advanced', 'experimental', 'revolutionary'];
+                const unlockedLevel = player.researchLevel;
+                playerBuildings = playerBuildings.filter(b => {
+                    const materialIndex = materialKeys.indexOf(b.material || 'basic');
+                    return materialIndex <= unlockedLevel;
+                });
+            }
+            
+            playerBuildings.forEach((building, idx) => {
+                const option = document.createElement('div');
+                option.className = 'building-option';
+                option.style.color = player.color;
+                
+                let carbonText = `${building.carbon > 0 ? '+' : ''}${building.carbon} kg CO₂`;
+                
+                // Show material bonus for architect
+                if (player.class === 'architect' && building.material) {
+                    const mat = materials[building.material];
+                    if (mat && mat.carbonBonus < 0) {
+                        carbonText += ` (${mat.name}: ${mat.carbonBonus}kg)`;
+                    }
+                }
+                
+                option.innerHTML = `
+                    <div class="building-option-icon">${building.icon}</div>
+                    <div class="building-option-name">${building.name}</div>
+                    <div class="building-option-carbon">${carbonText}</div>
+                `;
+                option.addEventListener('click', () => buildBuilding(building));
+                options.appendChild(option);
+            });
+            
+            modal.classList.add('active');
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById('build-modal').classList.remove('active');
+        }
+
+        // Build Building
+        function buildBuilding(building) {
+            const index = gameState.selectedParcel;
+            const player = gameState.players[gameState.currentPlayer];
+            
+            let finalCarbon = building.carbon;
+            let finalCost = building.cost || 0;
+            let finalProfit = building.profit || 0;
+            
+            // Apply material bonus for architect
+            if (player.class === 'architect' && building.material) {
+                const mat = materials[building.material];
+                if (mat) {
+                    finalCarbon += mat.carbonBonus;
+                    finalCost *= mat.costMultiplier;
+                }
+                
+                // Track portfolio diversity
+                player.portfolioDiversity.add(building.name);
+            }
+            
+            // Apply market cycle effects
+            if (player.class === 'developer') {
+                finalProfit *= player.marketSensitivity;
+                
+                if (gameState.marketCycle === 'boom') {
+                    finalProfit *= 1.3;
+                } else if (gameState.marketCycle === 'recession') {
+                    finalProfit *= 0.7;
+                }
+            }
+            
+            // Apply event modifiers
+            if (gameState.bioBonus && finalCarbon < 0) {
+                finalCarbon *= 1.2; // Bio-buildings even better during Biennale
+            }
+            
+            if (gameState.carbonTaxMultiplier && finalCarbon > 0) {
+                finalCost += (finalCarbon * 50 * gameState.carbonTaxMultiplier);
+            }
+            
+            gameState.parcels[index].building = building;
+            gameState.parcels[index].carbon = finalCarbon;
+            
+            const parcel = document.querySelectorAll('.parcel')[index];
+            parcel.innerHTML = `
+                <div class="player-stamp">${player.icon}</div>
+                <div class="building-icon">${building.icon}</div>
+            `;
+            
+            // Apply player color
+            parcel.classList.add(player.class);
+            
+            // Calculate adjacency effects
+            const adjacencyBonus = calculateAdjacencyEffects(index);
+            
+            // Update player stats based on their role
+            if (player.class === 'architect') {
+                player.carbon += finalCarbon;
+                player.budget -= finalCost;
+                
+                // Calculate recognition based on innovation + adjacency
+                let recognition = 10; // Base points
+                if (finalCarbon < -100) recognition += 40; // Highly innovative
+                else if (finalCarbon < -50) recognition += 25;
+                else if (finalCarbon < 0) recognition += 15;
+                
+                recognition += adjacencyBonus;
+                
+                // Portfolio diversity bonus
+                if (player.portfolioDiversity.size >= 3) {
+                    recognition += 20;
+                    player.awards++;
+                }
+                
+                player.recognition += recognition;
+                
+            } else if (player.class === 'developer') {
+                player.carbon += finalCarbon;
+                player.profit += finalProfit;
+                
+                // Calculate ROI
+                if (player.parcels > 0) {
+                    player.roi = Math.floor((player.profit / (player.parcels * 1000000)) * 100);
+                }
+                
+            } else if (player.class === 'citizen') {
+                player.carbon += finalCarbon;
+                player.green += building.green;
+                
+                // Affordable housing bonus
+                if (building.name.includes('Co-op') || building.name.includes('Housing')) {
+                    player.affordability += 15;
+                }
+                
+                // Apply gentrification penalty from adjacency
+                let carbonPenalty = Math.max(0, player.carbon / 10);
+                player.communityScore = Math.floor(
+                    (player.green / 100) + 
+                    player.affordability + 
+                    adjacencyBonus - 
+                    carbonPenalty - 
+                    player.gentrificationPenalty
+                );
+                
+            } else if (player.class === 'policymaker') {
+                player.carbon += finalCarbon;
+                player.budget -= finalCost;
+                
+                // Public approval changes based on carbon + adjacency
+                if (finalCarbon < -50) {
+                    player.publicApproval = Math.min(100, player.publicApproval + 5);
+                } else if (finalCarbon > 50) {
+                    player.publicApproval = Math.max(0, player.publicApproval - 3);
+                }
+                
+                player.publicApproval += Math.floor(adjacencyBonus / 5);
+                
+                // Carbon target progress
+                player.target = Math.min(100, player.target + 8);
+                
+                // Re-election pressure builds
+                player.reelectionPressure = gameState.round * 10;
+            }
+            
+            // Check for climate disasters
+            gameState.totalCarbonThreshold += finalCarbon;
+            if (gameState.totalCarbonThreshold > 5000) {
+                triggerClimateDisaster();
+            }
+            
+            updateScoreboard(gameState.currentPlayer);
+            closeModal();
+            
+            // Update total carbon meter
+            updateTotalCarbonMeter();
+            
+            document.getElementById('btn-build').disabled = true;
+        }
+
+        // Trigger Climate Disaster
+        function triggerClimateDisaster() {
+            const disasters = [
+                { name: 'Flash Flood', damage: 'Random building destroyed', icon: '🌊' },
+                { name: 'Heat Emergency', damage: 'Non-bio buildings lose value', icon: '🔥' },
+                { name: 'Air Quality Crisis', damage: 'Public approval -20% across board', icon: '💨' }
+            ];
+            
+            const disaster = disasters[Math.floor(Math.random() * disasters.length)];
+            gameState.disasters.push(disaster);
+            
+            alert(`⚠️ CLIMATE DISASTER!\n${disaster.icon} ${disaster.name}\n${disaster.damage}`);
+            
+            // Apply disaster effects
+            if (disaster.name === 'Flash Flood') {
+                // Destroy a random carbon-intensive building
+                const heavyParcels = gameState.parcels.filter(p => p.carbon > 400);
+                if (heavyParcels.length > 0) {
+                    const target = heavyParcels[Math.floor(Math.random() * heavyParcels.length)];
+                    const idx = gameState.parcels.indexOf(target);
+                    target.building = null;
+                    target.carbon = 0;
+                    document.querySelectorAll('.parcel')[idx].innerHTML = '+';
+                }
+            } else if (disaster.name === 'Air Quality Crisis') {
+                gameState.players.forEach(p => {
+                    if (p.publicApproval) {
+                        p.publicApproval = Math.max(0, p.publicApproval - 20);
+                    }
+                });
+            }
+            
+            gameState.totalCarbonThreshold = 0; // Reset threshold
+        }
+
+        // Update Scoreboard
+        function updateScoreboard(playerIndex) {
+            const player = gameState.players[playerIndex];
+            
+            if (player.class === 'architect') {
+                document.getElementById('architect-recognition').textContent = player.recognition + ' pts';
+                document.getElementById('architect-carbon').textContent = 
+                    (player.carbon > 0 ? '+' : '') + player.carbon + ' kg';
+                document.getElementById('architect-carbon').className = 
+                    player.carbon < 0 ? 'stat-value positive' : 'stat-value negative';
+                document.getElementById('architect-budget').textContent = 
+                    '$' + (player.budget / 1000000).toFixed(1) + 'M';
+                document.getElementById('architect-research').textContent = 
+                    player.researchLevel + ' / 3';
+                updateParcelDots('architect-parcels', player.parcels);
+                
+            } else if (player.class === 'developer') {
+                document.getElementById('developer-profit').textContent = 
+                    '$' + (player.profit / 1000000).toFixed(1) + 'M';
+                document.getElementById('developer-roi').textContent = player.roi + '%';
+                document.getElementById('developer-carbon').textContent = 
+                    (player.carbon > 0 ? '+' : '') + player.carbon + ' kg';
+                document.getElementById('developer-demolitions').textContent = player.demolitions;
+                updateParcelDots('developer-parcels', player.parcels);
+                
+            } else if (player.class === 'citizen') {
+                document.getElementById('citizen-score').textContent = 
+                    (player.communityScore || 0) + ' pts';
+                document.getElementById('citizen-green').textContent = 
+                    player.green.toLocaleString() + ' sq ft';
+                document.getElementById('citizen-affordable').textContent = player.affordability || 0;
+                document.getElementById('citizen-petitions').textContent = player.petitions;
+                updateParcelDots('citizen-parcels', player.parcels);
+                
+            } else if (player.class === 'policymaker') {
+                document.getElementById('policymaker-approval').style.width = player.publicApproval + '%';
+                document.getElementById('policymaker-target').textContent = player.target + '%';
+                document.getElementById('policymaker-budget').textContent = 
+                    '$' + (player.budget / 1000000).toFixed(0) + 'M';
+                document.getElementById('policymaker-policies').textContent = 
+                    player.policies + '/5';
+                updateParcelDots('policymaker-parcels', player.parcels);
+            }
+        }
+
+        // Update Parcel Dots
+        function updateParcelDots(containerId, count) {
+            const container = document.getElementById(containerId);
+            const dots = container.querySelectorAll('.parcel-dot');
+            dots.forEach((dot, idx) => {
+                if (idx < count) {
+                    dot.classList.add('filled');
+                } else {
+                    dot.classList.remove('filled');
+                }
+            });
+        }
+
+        // Update Total Carbon Meter
+        function updateTotalCarbonMeter() {
+            // Calculate total carbon from all parcels
+            let totalCarbon = 0;
+            gameState.parcels.forEach(parcel => {
+                if (parcel.carbon) {
+                    totalCarbon += parcel.carbon;
+                }
+            });
+            
+            const meterElement = document.getElementById('total-carbon-meter');
+            const valueElement = document.getElementById('total-carbon-value');
+            const fillElement = document.getElementById('carbon-meter-fill');
+            
+            // Update value
+            const sign = totalCarbon > 0 ? '+' : '';
+            valueElement.textContent = sign + totalCarbon.toLocaleString() + ' kg CO₂';
+            
+            // Color coding
+            if (totalCarbon < -500) {
+                meterElement.style.borderColor = '#22c55e';
+                valueElement.style.color = '#22c55e';
+                fillElement.style.background = 'linear-gradient(90deg, #22c55e, #4ade80)';
+            } else if (totalCarbon > 500) {
+                meterElement.style.borderColor = '#ef4444';
+                valueElement.style.color = '#ef4444';
+                fillElement.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+            } else {
+                meterElement.style.borderColor = '#eab308';
+                valueElement.style.color = '#eab308';
+                fillElement.style.background = 'linear-gradient(90deg, #eab308, #fbbf24)';
+            }
+            
+            // Fill bar based on carbon (normalized)
+            // Negative carbon = good, fills from left
+            // Positive carbon = bad, fills from right
+            const maxCarbon = 10000; // Max expected carbon
+            const percentage = Math.min(100, Math.abs(totalCarbon) / maxCarbon * 100);
+            
+            if (totalCarbon < 0) {
+                fillElement.style.left = '0';
+                fillElement.style.width = percentage + '%';
+            } else {
+                fillElement.style.left = (100 - percentage) + '%';
+                fillElement.style.width = percentage + '%';
+            }
+        }
+
+        // End Turn
+        document.getElementById('btn-end-turn').addEventListener('click', () => {
+            nextTurn();
+        });
+
+        // Next Turn
+        function nextTurn() {
+            // Clear selection
+            document.querySelectorAll('.parcel').forEach(p => p.classList.remove('selected'));
+            gameState.selectedParcel = null;
+            document.getElementById('btn-claim').disabled = true;
+            document.getElementById('btn-build').disabled = true;
+            document.getElementById('btn-partner').disabled = true;
+            
+            // Deactivate current player
+            document.querySelectorAll('.scoreboard').forEach(s => s.classList.remove('active'));
+            
+            // Next player
+            gameState.currentPlayer = (gameState.currentPlayer + 1) % 4;
+            
+            // If back to player 0, new round
+            if (gameState.currentPlayer === 0 && gameState.round < 8) {
+                gameState.round++;
+                document.getElementById('round-number').textContent = gameState.round;
+                
+                // Reset event modifiers
+                gameState.carbonPenaltyMultiplier = 1;
+                gameState.bioBonus = false;
+                gameState.carbonTaxMultiplier = 1;
+                gameState.players[1].marketSensitivity = 1.0;
+                
+                // Trigger random event (skip first round)
+                if (gameState.round > 1) {
+                    triggerRandomEvent();
+                }
+                
+                // Change policy
+                const policyIndex = (gameState.round - 1) % gameState.policies.length;
+                document.getElementById('active-policy').textContent = gameState.policies[policyIndex];
+            }
+            
+            // Check if game is over (completed 8 rounds = 32 turns)
+            if (gameState.round === 8 && gameState.currentPlayer === 0) {
+                endGame();
+                return;
+            }
+            
+            // Update special action button text
+            const player = gameState.players[gameState.currentPlayer];
+            const specialBtn = document.getElementById('btn-special');
+            specialBtn.disabled = false;
+            
+            if (player.class === 'architect') {
+                specialBtn.textContent = '🧬 Research Bio-Materials';
+            } else if (player.class === 'developer') {
+                specialBtn.textContent = '💰 Hostile Takeover';
+            } else if (player.class === 'citizen') {
+                specialBtn.textContent = '📢 Block Development';
+            } else if (player.class === 'policymaker') {
+                specialBtn.textContent = '📜 Issue Mandate';
+            }
+            
+            // Show turn indicator
+            const indicator = document.getElementById('turn-indicator');
+            indicator.textContent = player.name.toUpperCase() + "'S TURN";
+            indicator.style.borderColor = player.color;
+            indicator.style.color = player.color;
+            indicator.classList.add('show');
+            
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+            
+            // Activate current player board
+            const boardId = player.class + '-board';
+            document.getElementById(boardId).classList.add('active');
+        }
+
+        // End Game
+        function endGame() {
+            // Calculate scores based on each player's objectives
+            const scores = gameState.players.map((player, idx) => {
+                let score = 0;
+                let scoreBreakdown = '';
+                
+                if (player.class === 'architect') {
+                    score = player.recognition;
+                    const diversity = player.portfolioDiversity.size;
+                    scoreBreakdown = `Recognition: ${player.recognition} pts | Portfolio: ${diversity} types | Awards: ${player.awards}`;
+                } else if (player.class === 'developer') {
+                    score = player.profit / 100000; // Scale to reasonable number
+                    scoreBreakdown = `Profit: $${(player.profit / 1000000).toFixed(1)}M | ROI: ${player.roi}% | Parcels: ${player.parcels}`;
+                } else if (player.class === 'citizen') {
+                    score = player.communityScore || 0;
+                    scoreBreakdown = `Community: ${score} pts | Affordable: ${player.affordability} units | Green: ${(player.green / 1000).toFixed(1)}K sq ft`;
+                } else if (player.class === 'policymaker') {
+                    // Balance of approval and carbon targets
+                    score = Math.floor((player.publicApproval + player.target) / 2);
+                    scoreBreakdown = `Approval: ${player.publicApproval}% | Carbon Target: ${player.target}% | Policies: ${player.policies}`;
+                }
+                
+                return {
+                    name: player.name,
+                    score: score,
+                    breakdown: scoreBreakdown,
+                    carbon: player.carbon,
+                    parcels: player.parcels,
+                    color: player.color,
+                    icon: player.icon,
+                    objective: player.objective
+                };
+            });
+            
+            // Sort by score (highest = best)
+            scores.sort((a, b) => b.score - a.score);
+            
+            // Calculate total city carbon
+            let totalCarbon = 0;
+            gameState.parcels.forEach(p => totalCarbon += (p.carbon || 0));
+            
+            // Create results display
+            let resultsHTML = `
+                <div style="text-align: center; padding: 30px; max-height: 80vh; overflow-y: auto;">
+                    <h2 style="font-size: 36px; margin-bottom: 20px; color: ${scores[0].color};">
+                        🏆 GAME OVER! 🏆
+                    </h2>
+                    <h3 style="font-size: 24px; margin-bottom: 30px;">
+                        ${scores[0].icon} ${scores[0].name} WINS!
+                    </h3>
+                    <p style="font-size: 12px; opacity: 0.8; margin-bottom: 20px;">
+                        ${scores[0].breakdown}
+                    </p>
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin: 20px 0; border: 1px solid ${totalCarbon < 0 ? '#22c55e' : '#ef4444'};">
+                        <h4 style="font-size: 16px; margin-bottom: 10px; color: ${totalCarbon < 0 ? '#22c55e' : '#ef4444'};">
+                            CITY CARBON IMPACT
+                        </h4>
+                        <p style="font-size: 28px; font-weight: 600;">
+                            ${totalCarbon > 0 ? '+' : ''}${totalCarbon.toLocaleString()} kg CO₂
+                        </p>
+                        <p style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
+                            ${totalCarbon < -1000 ? '🌟 Carbon Negative City!' : totalCarbon < 0 ? '✅ Net Positive' : totalCarbon < 2000 ? '⚠️ High Emissions' : '🚨 Climate Crisis'}
+                        </p>
+                        <p style="font-size: 12px; margin-top: 10px; color: #4ade80;">
+                            🤝 ${gameState.partnerships.length} Partnerships Created
+                        </p>
+                        ${gameState.disasters.length > 0 ? `<p style="font-size: 12px; margin-top: 8px; color: #f87171;">⚠️ ${gameState.disasters.length} Climate Disasters</p>` : ''}
+                    </div>
+                    
+                    ${gameState.newsHeadlines.length > 0 ? `
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; margin: 15px 0;">
+                        <h4 style="font-size: 14px; margin-bottom: 10px; color: #fbbf24;">📰 MAJOR EVENTS</h4>
+                        <div style="font-size: 11px; opacity: 0.8;">
+                            ${gameState.newsHeadlines.slice(0, 5).join(' • ')}
+                        </div>
+                    </div>
+                    ` : ''}
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin: 20px 0;">
+                        <h4 style="font-size: 16px; margin-bottom: 15px; color: #4ade80;">FINAL STANDINGS</h4>
+            `;
+            
+            scores.forEach((score, idx) => {
+                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '4️⃣';
+                resultsHTML += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; margin: 8px 0; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid ${score.color};">
+                        <span style="font-size: 20px;">${medal}</span>
+                        <span style="font-size: 16px; color: ${score.color};">${score.icon} ${score.name}</span>
+                        <span style="font-size: 16px; font-weight: 600; color: ${score.color};">
+                            ${Math.floor(score.score)} pts
+                        </span>
+                        <span style="opacity: 0.6; font-size: 12px;">${score.parcels} parcels</span>
+                    </div>
+                `;
+            });
+            
+            resultsHTML += `
+                    </div>
+                    <button class="btn-start" onclick="location.reload()">PLAY AGAIN</button>
+                </div>
+            `;
+            
+            // Display results
+            const modal = document.getElementById('build-modal');
+            const content = document.getElementById('modal-content');
+            content.innerHTML = resultsHTML;
+            content.style.borderColor = scores[0].color;
+            content.style.maxWidth = '650px';
+            modal.classList.add('active');
+        }
+
+        // Initialize
+        initGrid();
+        
+        // Start with architect (player 0) - set to 0 directly, don't use nextTurn
+        gameState.currentPlayer = 0;
+        
+        // Manually activate first player
+        const player = gameState.players[0];
+        document.querySelectorAll('.scoreboard')[0].classList.add('active');
+        
+        // Set special action button
+        document.getElementById('btn-special').textContent = '🧬 Research Bio-Materials';
+        
+        // Show turn indicator
+        const indicator = document.getElementById('turn-indicator');
+        indicator.textContent = player.name.toUpperCase() + "'S TURN";
+        indicator.style.borderColor = player.color;
+        indicator.style.color = player.color;
+        indicator.classList.add('show');
+        
+        setTimeout(() => {
+            indicator.classList.remove('show');
+        }, 2000);
+        
+        // Activate first scoreboard
+        document.querySelectorAll('.scoreboard')[0].classList.add('active');
+    </script>
+</body>
+</html>
