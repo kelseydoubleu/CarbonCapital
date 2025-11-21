@@ -12,23 +12,18 @@
         body, html {
             width: 100%;
             height: 100%;
-            position: fixed;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: black; /* or whatever your bg color is */
+            overflow: hidden; /* Prevents scrolling without position fixed */
         }
         iframe {
             width: 100%;
             height: 100%;
             border: none;
-            max-width: 100vw;
-            max-height: 100vh;
+            display: block;
         }
     </style>
 </head>
 <body>
-    <iframe src="https://embed.figma.com/proto/roo4O6Lw0BsaSU3g3s8LQI/CARBON-CAPITAL?node-id=2023-1979&p=f&scaling=contain&content-scaling=fixed&page-id=615%3A5276&starting-point-node-id=2023%3A1979&embed-host=share&hide-ui=1&hotspot-hints=0" allowfullscreen></iframe>
+    <iframe src="https://embed.figma.com/proto/roo4O6Lw0BsaSU3g3s8LQI/CARBON-CAPITAL?node-id=2023-1979&p=f&scaling=contain&content-scaling=responsive&page-id=615%3A5276&starting-point-node-id=2023%3A1979&embed-host=share&hide-ui=1&hotspot-hints=0" allowfullscreen></iframe>
     
     <script>
         document.addEventListener('keydown', function(e) {
