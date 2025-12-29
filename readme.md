@@ -24,7 +24,7 @@ Vanilla HTML/CSS/JavaScript
 
 ## Usage
 
-Open `index.html` in a browser or visit the [live demo](https://kelseydoubleu.github.io/CarbonCapital/). Best played with 4 people on separate devices.
+Open `index.html` in a browser or visit the [live demo](https://kelseydoubleu.github.io/CarbonCapital/).
 
 ---
 
