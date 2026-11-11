@@ -1,28 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Carbon Capital</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-        }
-        body, html {
-            width: 100%;
-            height: 100%;
-            position; fixed;
-        }
-        iframe {
-            width: 100%;
-            height: 100%;
-            border: none;
-            position; fixed;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carbon Capital</title>
+<meta name="description" content="Carbon Capital: a four-player simulation of 125th Street, Harlem. Policymaker, Developer, Architect, Citizen. Build carbon conviction before the carbon budget runs out.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <iframe src="https://embed.figma.com/proto/roo4O6Lw0BsaSU3g3s8LQI/CARBON-CAPITAL?node-id=2023-1979&p=f&scaling=scale-down&content-scaling=responsive&page-id=615%3A5276&starting-point-node-id=2023%3A1979&embed-host=share&hide-ui=1&hotspot-hints=0" allowfullscreen></iframe>
+<div id="viewport"><div id="stage">
+
+  <!-- LANDING / RULES -->
+  <section id="landing" class="screen on">
+    <svg class="bigtype" viewBox="0 0 1435 1022" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <filter id="grain" x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation="9" result="b"/>
+          <feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="2" seed="4" result="n"/>
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -1.6 1.25" result="nm"/>
+          <feComposite in="b" in2="nm" operator="in"/>
+        </filter>
+      </defs>
+      <g filter="url(#grain)" fill="#9a9a9a" font-family="Space Mono, monospace" font-weight="700">
+        <text x="-30" y="420" font-size="430" textLength="1500" lengthAdjust="spacingAndGlyphs">CARBON</text>
+        <text x="-30" y="900" font-size="430" textLength="1500" lengthAdjust="spacingAndGlyphs">CAPITAL</text>
+      </g>
+    </svg>
+    <div class="intro-box" id="introBox"></div>
+  </section>
+
+  <!-- SETUP -->
+  <section id="setup" class="screen">
+    <h2>WHO IS PLAYING?</h2>
+    <div class="sub">Pick a human or a computer for each seat. Pass the screen when it's your turn.</div>
+    <div class="seats" id="seats"></div>
+    <div class="presets">
+      <button data-p="cit">SOLO AS CITIZEN</button>
+      <button data-p="policy">SOLO AS POLICYMAKER</button>
+      <button data-p="dev">SOLO AS DEVELOPER</button>
+      <button data-p="arch">SOLO AS ARCHITECT</button>
+      <button data-p="all">4 HUMANS</button>
+      <button data-p="none">WATCH 4 COMPUTERS</button>
+    </div>
+    <div class="go"><button class="pill" id="startBtn">LET'S START!</button></div>
+  </section>
+
+  <!-- SITE INTRO -->
+  <section id="siteintro" class="screen">
+    <svg id="introBoard" width="1160" height="517" viewBox="-70 -80 1100 490"></svg>
+    <div class="intro-box" style="top:120px;transform:translate(-50%,0)"><div class="intro-text center" id="siteText"></div></div>
+    <div class="intro-box" style="top:790px;transform:translate(-50%,0)"><div class="btn-row" style="margin:0"><button class="pill ghost" id="siteNext">NEXT</button></div></div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game" class="screen">
+    <svg id="board" viewBox="-70 -80 1100 490"></svg>
+    <div class="panel" id="p-policy"></div>
+    <div class="panel" id="p-dev"></div>
+    <div class="panel" id="p-arch"></div>
+    <div class="panel" id="p-cit"></div>
+    <div class="titlecard"><span class="rd l" id="rdL">ROUND 1</span><h1>CARBON<br>CAPITAL</h1><span class="rd r" id="rdR">ROUND 1</span></div>
+    <div class="tools l"><button class="tbtn" id="tRules">? RULES</button><button class="tbtn" id="tLog">≡ GAME LOG</button></div>
+    <div class="tools r"><button class="tbtn" id="tSpeed">» SPEED: NORMAL</button><button class="tbtn" id="tRestart">↺ NEW GAME</button></div>
+    <div class="bubble" id="bubble"></div>
+    <div class="ticker" id="ticker"></div>
+    <div class="actions" id="actions"></div>
+    <div class="index" id="ix-carbon"></div>
+    <div class="index" id="ix-conv"></div>
+    <div class="banner" id="banner"></div>
+  </section>
+
+  <!-- END -->
+  <section id="end" class="screen"><div class="endwrap" id="endWrap"></div></section>
+
+  <div class="scrim" id="scrim"><div class="modal" id="modal"></div></div>
+  <div class="tip" id="tip"></div>
+</div></div>
+<div class="rotate-hint">Best played on a laptop or with your phone sideways.</div>
+<script src="engine.js"></script>
+<script src="ui.js"></script>
 </body>
 </html>
