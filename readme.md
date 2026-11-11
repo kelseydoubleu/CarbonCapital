@@ -1,31 +1,32 @@
 # Carbon Capital
 
-A four-player negotiation game that simulates the complex stakeholder dynamics required for carbon-negative urban development.
+Can four players change a city's mind? A four-player simulation of 125th Street in East Harlem.
 
-**[Try it live →](https://kelseydoubleu.github.io/CarbonCapital/)** *(Work in progress)*
+**[Play it →](https://kelseydoubleu.github.io/CarbonCapital/)**
 
-## What it does
+Each player is a real stakeholder with different power and incentives:
 
-Carbon Capital is a digital board game where four players represent different sectors—developers, policymakers, community organizers, and architects—each with competing interests and resources. Players must negotiate, trade, and compromise to achieve carbon-negative outcomes in East Harlem.
+| Role | Wants | Can |
+|---|---|---|
+| Policymaker | Public approval | Rezone parcels, enact policies (Green Subsidy, Carbon Tax, Housing Quota, Deregulation), hold town halls |
+| Developer | Profit | Acquire and develop parcels (2 actions per turn), request rezoning, raise capital |
+| Architect | Recognition | Research bio-materials, retrofit, pitch bio-based designs, build the four Carbon Temples and the Material Hub |
+| Citizen | Livability | Organize community spaces, spread the word, join coalitions, protest other players' moves |
 
-The game demonstrates that no single stakeholder can solve climate challenges alone. Win conditions require cross-sector collaboration, forcing players to experience firsthand why systemic change demands negotiation rather than top-down mandates or individual action.
+Everyone shares two numbers: the **Carbon Index** (starts at 50,000 tons; at 100,000 the budget is gone and everyone loses) and the **Conviction Index** (how much the city cares about carbon; it fades every round).
 
-## Context
+- **Win together:** build the Material Hub and reach 80% conviction before the carbon budget runs out.
+- **Win alone:** if 12 rounds pass without either, the highest personal score wins.
 
-Developed as part of the "Carbon Capital" thesis at Columbia GSAPP exploring systemic approaches to decarbonization. The game serves as both a research tool (testing which stakeholder configurations enable climate action) and a pedagogical device (teaching players that carbon-negative development is fundamentally a coordination problem).
+Any seat can be a human or the computer: play solo against three AIs, pass the screen between four people, or watch four computers play (`?demo`).
 
-## Status
+Part of *Carbon Temples* (ADV V "Scaling Up", Fall 2025, Columbia GSAPP; Kelsey Wang and Lorennah Granfors; instructor David Benjamin).
 
-🚧 Work in progress
+## Files
 
-## Tech
+- `engine.js`: rules, city deck, AI players. No DOM, so it also runs in Node for balance simulations.
+- `ui.js`, `style.css`, `index.html`: the interface.
+- `assets/ground.png`: the 125th Street plan from the Figma board.
+- `archive/`: earlier HTML versions and the Figma click-through prototype.
 
-Vanilla HTML/CSS/JavaScript
-
-## Usage
-
-Open `index.html` in a browser or visit the [live demo](https://kelseydoubleu.github.io/CarbonCapital/).
-
----
-
-*Part of the Carbon Temple ecosystem*
+Vanilla HTML/CSS/JS, no build step.
